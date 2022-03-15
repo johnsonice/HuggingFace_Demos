@@ -9,5 +9,5 @@ import os
 
 ## some global params 
 root = "/media/chengyu/Elements1/HuggingFace/tweet"
-data_foder = os.path.join(root,'data')
- 
+data_folder = os.path.join(root,'data')
+RANDOM_SEED = 42

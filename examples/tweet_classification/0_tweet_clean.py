@@ -58,7 +58,7 @@ if __name__ == "__main__":
     
     ## export data 
     df.to_json(os.path.join(config.data_foder,'tweets.jsonl'),orient='records', lines=True)
-    df.to_csv(os.path.join(config.data_foder,'tweets.csv'),encoding='utf8')
+    df.to_csv(os.path.join(config.data_foder,'tweets.csv'),encoding='utf8',index=False)
     # ## split and export if you need to preprocess them 
     # df_train = df.sample(frac = 0.25,replace=False)
     # df_test = df.drop(df_train.index)  ## drop already sampled obs 
