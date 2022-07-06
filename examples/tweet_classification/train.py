@@ -9,6 +9,7 @@ Created on Sat Mar 12 20:38:03 2022
     https://medium.com/mlearning-ai/twitter-sentiment-analysis-with-deep-learning-using-bert-and-hugging-face-830005bcdbbf
     https://curiousily.com/posts/sentiment-analysis-with-bert-and-hugging-face-using-pytorch-and-python/
     https://lewtun.github.io/blog/til/nlp/huggingface/transformers/2021/01/01/til-data-collator.html
+    https://towardsdatascience.com/fine-tuning-pretrained-nlp-models-with-huggingfaces-trainer-6326a4456e7b
     https://huggingface.co/blog/sentiment-analysis-python
 ## weight decay:
     https://towardsdatascience.com/this-thing-called-weight-decay-a7cd4bcfccab
@@ -32,10 +33,11 @@ from sklearn.model_selection import train_test_split
 
 ## import transformer packages 
 import datasets
-from datasets import Dataset,load_metric
-from transformers import AutoTokenizer,AutoModelForSequenceClassification,DataCollatorWithPadding
+from datasets import Dataset,load_metric,logging as dataset_logging
+from transformers import AutoTokenizer,AutoModelForSequenceClassification,DataCollatorWithPadding,logging as transformers_logging
 from transformers import TrainingArguments, Trainer
-
+transformers_logging.set_verbosity_error() ## make it less verbose
+dataset_logging.set_verbosity_error() ## make it less verbose
 print('gpu available : {}'.format(torch.cuda.is_available()))
 
 #%%
@@ -74,6 +76,7 @@ if __name__ == "__main__":
     dataset_test = Dataset.from_pandas(df_test,split='test')
     dataset = datasets.DatasetDict({'train':dataset_train, 'test':dataset_test})
     print(dataset)
+    
     #%%
     ## process dataset / tokenize and encode / tokenizer should change based on model selection 
     tokenizer = AutoTokenizer.from_pretrained(MODEL)
@@ -85,7 +88,12 @@ if __name__ == "__main__":
                                                             
     ## the will process both train and test split 
     tokenized_datasets = dataset.map(tokenize_function, batched=True,num_proc=N_CPU) ##batch proceee then ; and multiprocess = 6 
-    print(tokenized_datasets)
+    #print(tokenized_datasets)
+    ## remove unused columns 
+    print(tokenized_datasets['train'][0])
+        ## dict_keys(['text', 'label', '__index_level_0__'])
+    tokenized_datasets= tokenized_datasets.remove_columns(['text','__index_level_0__'],)
+    ## split out train and test 
     tokenized_train = tokenized_datasets['train']
     tokenized_test = tokenized_datasets['test']
     
@@ -95,13 +103,18 @@ if __name__ == "__main__":
     ## set up training arguments 
     #%%
     training_args = TrainingArguments(output_dir=out_dir,
-                                       evaluation_strategy="epoch",
+                                       #evaluation_strategy="epoch",
+                                       evaluation_strategy="steps",
+                                       eval_steps=20,
+                                       logging_steps =20,          ## show eval results
                                        learning_rate=2e-5,
                                        per_device_train_batch_size=8,
                                        per_device_eval_batch_size=8,
-                                       num_train_epochs=5,
-                                       weight_decay=0.01, ## wd regularizor, usually a very small number as additional weight penality
-                                       save_steps=10,
+                                       num_train_epochs=20,
+                                       weight_decay=0.4, ## wd regularizor, usually a very small number as additional weight penality
+                                       save_steps=100,
+                                       load_best_model_at_end=True, ## only save and load best model
+                                       save_total_limit = 1,        ## only save one checkpoint
                                        seed=RANDOM_SEED)  
     ## set up trainer 
     trainer = Trainer(
@@ -115,9 +128,10 @@ if __name__ == "__main__":
     )
         
     ## train 
-    trainer.train()
-    #%%
-    x = trainer.evaluate()
+    t = trainer.train()
+    x = trainer.evaluate() 
+    print(t,x)
+    trainer.save_model(out_dir)
     
     
     
