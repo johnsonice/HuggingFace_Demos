@@ -63,6 +63,7 @@ if __name__ == "__main__":
     MODEL = "bert-base-cased"
     N_CPU = 6 
     out_dir = os.path.join(config.data_folder,'tweet_classfier')
+    tokenized_outdir = os.path.join(config.data_folder,'tweets_dataset','tokenized','tokenized_data')
     #%%
     ## load csv data into df
     data_path = os.path.join(config.data_folder,'tweets.csv')
@@ -93,6 +94,10 @@ if __name__ == "__main__":
     print(tokenized_datasets['train'][0])
         ## dict_keys(['text', 'label', '__index_level_0__'])
     tokenized_datasets= tokenized_datasets.remove_columns(['text','__index_level_0__'],)
+    ### save to disc for future use
+    tokenized_datasets.save_to_disk(tokenized_outdir)
+    # to load data : tokenized_datasets = datasets.load_from_disk(tokenized_outdir)
+    #%%
     ## split out train and test 
     tokenized_train = tokenized_datasets['train']
     tokenized_test = tokenized_datasets['test']
