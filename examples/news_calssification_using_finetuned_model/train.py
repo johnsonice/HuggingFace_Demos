@@ -6,117 +6,87 @@ Created on Tue Jul 12 13:51:44 2022
 @author: huang
 """
 # Import required packages
-import torch
-import pandas as pd
-import numpy as np
+import os,sys
+sys.path.insert(0,'../../libs')
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer,DataCollatorWithPadding,TrainingArguments
-from datasets import load_dataset,load_metric
+from datasets import load_dataset,load_from_disk
 import config
-import os
-
+from hf_utils import compute_acc_f1
 ## modeify the head of someone's fintuned model : use the ignore mismatched size argument
 ## https://discuss.huggingface.co/t/how-do-i-change-the-classification-head-of-a-model/4720/19 
 
-#%%
-
-# Create class for data preparation
-class SimpleDataset:
-    def __init__(self, tokenized_texts):
-        self.tokenized_texts = tokenized_texts
-    
-    def __len__(self):
-        return len(self.tokenized_texts["input_ids"])
-    
-    def __getitem__(self, idx):
-        return {k: v[idx] for k, v in self.tokenized_texts.items()}
-
-def compute_metrics(eval_pred):
-   load_accuracy = load_metric("accuracy")
-   load_f1 = load_metric("f1")
-  
-   logits, labels = eval_pred
-   predictions = np.argmax(logits, axis=-1)
-   accuracy = load_accuracy.compute(predictions=predictions, references=labels)["accuracy"]
-   f1 = load_f1.compute(predictions=predictions, references=labels,average=None)["f1"] 
-   if isinstance(f1, np.ndarray):
-       f1 = f1.tolist()  ## add this as nd array is not serializable when exporting 
-   # print(load_metric("f1").inputs_description) ## print out descriptions 
-   return {"accuracy": accuracy, "f1": f1}
-
+## hyperparameter-search in trainer
+# https://discuss.huggingface.co/t/using-hyperparameter-search-in-trainer/785?page=3
+# https://huggingface.co/blog/ray-tune
 #%%
 
 if __name__ == "__main__":
     
-    N_CPU = 6 
+    N_CPU = config.N_CPU 
     RANDOM_SEED = config.RANDOM_SEED
-    MODEL_OUTDIR = os.path.join(config.data_folder,'news_classification','models')
+    MODEL_OUTDIR = os.path.join(config.model_folder,'news_classification')
+    DATASET_DIR = os.path.join(config.data_folder,'Data','climate_news','baseline_dataset')
     
     # Load tokenizer and model, create trainer
     model_name = "siebert/sentiment-roberta-large-english"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     ## load pretrained and fintuned model with a ramdom initialized classifer layer
-    model = AutoModelForSequenceClassification.from_pretrained(model_name,num_labels=4,ignore_mismatched_sizes=True)
-    trainer = Trainer(model=model)
+    model = AutoModelForSequenceClassification.from_pretrained(model_name,
+                                                               num_labels=3,
+                                                               ignore_mismatched_sizes=True,
+                                                               attention_probs_dropout_prob=0.3, ##change drop out 
+                                                               hidden_dropout_prob=0.4) ##change drop out 
+    #trainer = Trainer(model=model)
     print(model.config) ## original classifier 
     
-    #%%
     ## load an sample dataset 
-    raw_datasets = load_dataset("ag_news")
-    print(raw_datasets.keys())
-    print(raw_datasets['train'][0])
+    input_dataset = load_from_disk(DATASET_DIR)
+    print(input_dataset)
+    input_dataset = input_dataset.remove_columns('text') ## remove raw text for training
     
-    small_dataset_train = raw_datasets['train'].select(range(5000))
-    small_dataset_test = raw_datasets['test'].select(range(1000))
-    
-    
-    #%%
-    ## tokenize data and prepare for dataset
-    def tokenize_function(examples):
-        return tokenizer(examples["text"], truncation=True) #padding="max_length", ; normally you want to pad to global max length
-                                                            # here we will use data collector later which will automately pad based on 
-                                                            # longest of the batch 
-    
-    small_dataset_train = small_dataset_train.map(tokenize_function, batched=True,num_proc=N_CPU) 
-    small_dataset_test = small_dataset_test.map(tokenize_function, batched=True,num_proc=N_CPU)
-    small_dataset_train= small_dataset_train.remove_columns(['text'])
-    small_dataset_test= small_dataset_test.remove_columns(['text'])
-    
-    print(small_dataset_train[0]) ## print one for visual inspection
-    
-    
-    #%%
+    ## set up data collactor for dynamic padding in batch 
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
     
+    ## set up training args 
     training_args = TrainingArguments(output_dir=MODEL_OUTDIR,
                                    #evaluation_strategy="epoch",
                                    evaluation_strategy="steps",
-                                   eval_steps=200,
-                                   logging_steps =200,          ## show eval results
-                                   learning_rate=2e-5,
-                                   per_device_train_batch_size=8,
-                                   per_device_eval_batch_size=8,
-                                   num_train_epochs=5,
-                                   weight_decay=0.4, ## wd regularizor, usually a very small number as additional weight penality
-                                   save_steps=200,
+                                   eval_steps=30,
+                                   logging_steps =30,          ## show eval results
+                                   learning_rate=1e-5,
+                                   per_device_train_batch_size=4,
+                                   per_device_eval_batch_size=4,
+                                   gradient_accumulation_steps=2,
+                                   num_train_epochs=15,
+                                   warmup_steps=25,
+                                   weight_decay=0.01,    ## wd regularizor, usually a very small number as additional weight penality
+                                   label_smoothing_factor=0.1,
+                                   save_steps=30,
                                    load_best_model_at_end=True, ## only save and load best model
-                                   save_total_limit = 1,        ## only save one checkpoint
+                                   metric_for_best_model='accuracy',
+                                   save_total_limit = 4,        ## only save one checkpoint
                                    seed=RANDOM_SEED)  
     ## set up trainer 
     trainer = Trainer(
        model=model,
        args=training_args,
-       train_dataset=small_dataset_train,
-       eval_dataset=small_dataset_test,
+       train_dataset=input_dataset['train'],
+       eval_dataset=input_dataset['val'],
        tokenizer=tokenizer,
        data_collator=data_collator,
-       compute_metrics=compute_metrics,
+       compute_metrics=compute_acc_f1,
     )
         
-    
+    #%%
     ## train 
     t = trainer.train()
     x = trainer.evaluate() 
+    print('Training; Evaluation Results:')
     print(t,x)
+    print('Test Results:')
+    test_res = trainer.evaluate(input_dataset['test'])
+    print(test_res)
+    #%5
     trainer.save_model(MODEL_OUTDIR)
         
     
