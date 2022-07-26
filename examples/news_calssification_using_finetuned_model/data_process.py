@@ -31,12 +31,13 @@ def load_split_climate_data(raw_data_path):
 if __name__ == "__main__":
     
     TOKENIZE_FLAG = True
-    
-    raw_data = os.path.join(config.data_folder,'Data','climate_news','Climate_training_paragraphs.xlsx')
+    file_name = 'Climate_training_paragraphs_v2.xlsx'#_overweight.xlsx'
+    raw_data = os.path.join(config.data_folder,'Data','climate_news',file_name)
     baseline_ds_dir = os.path.join(config.data_folder,'Data','climate_news','baseline_dataset')
     
     if TOKENIZE_FLAG:
         model_name = "siebert/sentiment-roberta-large-english"
+        #model_name = "bert-large-uncased"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
     
     ## load climate data into datasets and split it by train val test

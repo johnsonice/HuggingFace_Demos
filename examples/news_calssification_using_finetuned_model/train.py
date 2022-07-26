@@ -22,6 +22,17 @@ from hf_utils import compute_acc_f1
 
 if __name__ == "__main__":
     
+    
+    param_dict = {"attention_probs_dropout_prob": 0.2, 
+                         "hidden_dropout_prob": 0.3, 
+                         "learning_rate": 2e-05, 
+                         "per_device_train_batch_size": 2, 
+                         "gradient_accumulation_steps": 2, 
+                         "weight_decay": 0.05, 
+                         "label_smoothing_factor": 0.1, 
+                         "metric_for_best_model": "accuracy"}
+
+    
     N_CPU = config.N_CPU 
     RANDOM_SEED = config.RANDOM_SEED
     MODEL_OUTDIR = os.path.join(config.model_folder,'news_classification')
@@ -29,13 +40,14 @@ if __name__ == "__main__":
     
     # Load tokenizer and model, create trainer
     model_name = "siebert/sentiment-roberta-large-english"
+    #model_name = "bert-large-uncased"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     ## load pretrained and fintuned model with a ramdom initialized classifer layer
     model = AutoModelForSequenceClassification.from_pretrained(model_name,
                                                                num_labels=3,
                                                                ignore_mismatched_sizes=True,
-                                                               attention_probs_dropout_prob=0.3, ##change drop out 
-                                                               hidden_dropout_prob=0.4) ##change drop out 
+                                                               attention_probs_dropout_prob=0.2, ##change drop out 
+                                                               hidden_dropout_prob=0.3) ##change drop out 
     #trainer = Trainer(model=model)
     print(model.config) ## original classifier 
     
@@ -53,13 +65,13 @@ if __name__ == "__main__":
                                    evaluation_strategy="steps",
                                    eval_steps=30,
                                    logging_steps =30,          ## show eval results
-                                   learning_rate=1e-5,
-                                   per_device_train_batch_size=4,
-                                   per_device_eval_batch_size=4,
+                                   learning_rate=2e-05,
+                                   per_device_train_batch_size=2,
+                                   per_device_eval_batch_size=2,
                                    gradient_accumulation_steps=2,
-                                   num_train_epochs=15,
+                                   num_train_epochs=10,
                                    warmup_steps=25,
-                                   weight_decay=0.01,    ## wd regularizor, usually a very small number as additional weight penality
+                                   weight_decay=0.05,    ## wd regularizor, usually a very small number as additional weight penality
                                    label_smoothing_factor=0.1,
                                    save_steps=30,
                                    load_best_model_at_end=True, ## only save and load best model
