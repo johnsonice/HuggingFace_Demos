@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Aug  2 16:33:31 2022
+
+@author: huang
+"""
+from sentence_transformers import SentenceTransformer, util
+import torch,os
+import config
+#from huggingface_hub import hf_hub_url
+from datasets import load_dataset,load_from_disk
+from datasets import Dataset
+from transformers import AutoTokenizer, AutoModel
+
+
+## pull the cls token embeding 
+def cls_pooling(model_output):
+    return model_output.last_hidden_state[:, 0]
+
+def get_embeddings(text_list):
+    encoded_input = tokenizer(
+        text_list, padding=True, truncation=True, return_tensors="pt"
+    )
+    encoded_input = {k: v for k, v in encoded_input.items()}
+    model_output = model(**encoded_input)
+    return cls_pooling(model_output)
+
+
+if __name__ == "__main__":
+
+    model_ckpt = "sentence-transformers/multi-qa-mpnet-base-dot-v1"  ## prefious we are using 'all-MiniLM-L6-v2'
+    tokenizer = AutoTokenizer.from_pretrained(model_ckpt)
+    model = AutoModel.from_pretrained(model_ckpt)
+    
+    
+    ## get embeding and save dataset
+    dataset_cache_dir = os.path.join(config.data_folder,'Semantic_Search_cache','QA')
+    if os.path.exists(dataset_cache_dir):
+        embeddings_dataset = load_from_disk(dataset_cache_dir)
+    else: 
+        embeddings_dataset = comments_dataset.map(
+            lambda x: {"embeddings": get_embeddings(x["text"]).detach().numpy()[0]}
+        )
+        embeddings_dataset.save_to_disk(dataset_cache_dir)
+        
+    ### not sure if add_faiss_index will automatically normalize it. maybe a good idea to normalize ourself 
+    embeddings_dataset.add_faiss_index(column="embeddings")
+    
+    #%%
+    question = "How can I load a dataset offline?"
+
+    question_embedding = get_embeddings([question]).detach().numpy()
+    type(question_embedding)
+    
+    #%%
+    scores, samples = embeddings_dataset.get_nearest_examples(
+    "embeddings", question_embedding, k=2
+    )
+    #%%
+    print(samples)
