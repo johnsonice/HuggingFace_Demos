@@ -31,12 +31,14 @@ if __name__ == "__main__":
                          "weight_decay": 0.05, 
                          "label_smoothing_factor": 0.1, 
                          "metric_for_best_model": "accuracy"}
-
+    
+    DS_version = 'data_augumentation/aug_dataset_step1_2label'#baseline_2label'#data_augumentation/aug_dataset_step1'#baseline_dataset
+    run_name='climate_news/'+DS_version
     
     N_CPU = config.N_CPU 
     RANDOM_SEED = config.RANDOM_SEED
     MODEL_OUTDIR = os.path.join(config.model_folder,'news_classification')
-    DATASET_DIR = os.path.join(config.data_folder,'Data','climate_news','baseline_dataset')
+    DATASET_DIR = os.path.join(config.data_folder,'Data','climate_news',DS_version)
     
     # Load tokenizer and model, create trainer
     model_name = "siebert/sentiment-roberta-large-english"
@@ -44,12 +46,13 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     ## load pretrained and fintuned model with a ramdom initialized classifer layer
     model = AutoModelForSequenceClassification.from_pretrained(model_name,
-                                                               num_labels=3,
-                                                               ignore_mismatched_sizes=True,
+                                                               # num_labels=3,
+                                                               # num_labels=2,
+                                                               # ignore_mismatched_sizes=True,
                                                                attention_probs_dropout_prob=0.2, ##change drop out 
                                                                hidden_dropout_prob=0.3) ##change drop out 
     #trainer = Trainer(model=model)
-    print(model.config) ## original classifier 
+    #print(model.config) ## original classifier 
     
     ## load an sample dataset 
     input_dataset = load_from_disk(DATASET_DIR)
@@ -63,21 +66,22 @@ if __name__ == "__main__":
     training_args = TrainingArguments(output_dir=MODEL_OUTDIR,
                                    #evaluation_strategy="epoch",
                                    evaluation_strategy="steps",
-                                   eval_steps=30,
-                                   logging_steps =30,          ## show eval results
-                                   learning_rate=2e-05,
+                                   eval_steps=10,
+                                   logging_steps =10,          ## show eval results
+                                   learning_rate=1e-05,
                                    per_device_train_batch_size=2,
                                    per_device_eval_batch_size=2,
-                                   gradient_accumulation_steps=2,
-                                   num_train_epochs=10,
-                                   warmup_steps=25,
-                                   weight_decay=0.05,    ## wd regularizor, usually a very small number as additional weight penality
-                                   label_smoothing_factor=0.1,
-                                   save_steps=30,
+                                   gradient_accumulation_steps=4,
+                                   num_train_epochs=5,
+                                   warmup_steps=10,
+                                   weight_decay=0.1,    ## wd regularizor, usually a very small number as additional weight penality
+                                   label_smoothing_factor=0.2,
+                                   save_steps=10,
                                    load_best_model_at_end=True, ## only save and load best model
                                    metric_for_best_model='accuracy',
-                                   save_total_limit = 4,        ## only save one checkpoint
-                                   seed=RANDOM_SEED)  
+                                   save_total_limit = 1,        ## only save one checkpoint
+                                   seed=RANDOM_SEED,
+                                   run_name=run_name)  
     ## set up trainer 
     trainer = Trainer(
        model=model,
