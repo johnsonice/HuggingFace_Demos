@@ -34,10 +34,10 @@ def add_columns(example):
 #%%
 if __name__ == "__main__":    
 
-    MODEL_OUTDIR = os.path.join(config.model_folder,'news_classification')
-    DATASET_DIR = os.path.join(config.data_folder,'Data','climate_news','baseline_dataset')
-    Inference_data_dir = os.path.join(config.data_folder,'Data','climate_news','inference_data','newslist_7.18.csv')
-    Inference_data_out_dir = os.path.join(config.data_folder,'Data','climate_news','inference_data','newslist_7.18_pred_{}.csv')
+    MODEL_OUTDIR = os.path.join(config.model_folder,'news_classification','roberta_v2_2label_0814')
+    #DATASET_DIR = os.path.join(config.data_folder,'Data','climate_news','baseline_dataset')
+    Inference_data_dir = os.path.join(config.data_folder,'Data','climate_news','inference_data','raw','newslist_7.18.csv')
+    Inference_data_out_dir = os.path.join(config.data_folder,'Data','climate_news','inference_data','infer_results_3label','newslist_7.18_pred_{}.csv')
     #%%
     ## load infer data 
     print('.....load all raw data .....')
@@ -62,10 +62,12 @@ if __name__ == "__main__":
         for out in tqdm(pipe(KeyDataset(chunk_dataset, "text"), batch_size=8, padding=True, truncation=True)):
             res.append(transform_pipe_results(out))
         res_df = pd.DataFrame(res)
-        chunk_dataset=chunk_dataset.add_column('netural',res_df[0])
+        #chunk_dataset=chunk_dataset.add_column('netural',res_df[0])
+        chunk_dataset=chunk_dataset.add_column('negative',res_df[0])
         chunk_dataset=chunk_dataset.add_column('positive',res_df[1])
-        chunk_dataset=chunk_dataset.add_column('negative',res_df[2])
-        chunk_dataset=chunk_dataset.add_column('label',res_df[3])
+        chunk_dataset=chunk_dataset.add_column('label',res_df[2])
+        #chunk_dataset=chunk_dataset.add_column('negative',res_df[2])
+        #chunk_dataset=chunk_dataset.add_column('label',res_df[3])
         
         chunk_dataset.to_csv(Inference_data_out_dir.format(chunk_index))
         

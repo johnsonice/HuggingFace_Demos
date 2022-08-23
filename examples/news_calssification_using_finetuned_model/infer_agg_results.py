@@ -27,7 +27,7 @@ climate_keys = ['policy', 'government', 'adaptation', 'mitigation',
     'carbon emission', 'greenhouse gas', 'sea-level rise', 'low carbon']
 
 keep_cols = ['id','pub_date', 'source', 'language', 'title', 'body', 'Year', 'ym',
-             'climate_count','climate_binary','netural', 'positive', 'negative', 'label']
+             'climate_count','climate_binary', 'positive', 'negative', 'label'] #'netural',
 
 
 def agg_by(df,group_cols:list,value_cols_dict:dict):
@@ -46,8 +46,8 @@ def agg_by(df,group_cols:list,value_cols_dict:dict):
 if __name__ == "__main__":    
 
     #MODEL_OUTDIR = os.path.join(config.model_folder,'news_classification')
-    res_dir = os.path.join(config.data_folder,'Data','climate_news','inference_data','infer_results')
-    out_agg_dir = os.path.join(config.data_folder,'Data','climate_news','inference_data','final_agg.csv')
+    res_dir = os.path.join(config.data_folder,'Data','climate_news','inference_data','infer_res_2label')
+    out_agg_dir = os.path.join(config.data_folder,'Data','climate_news','inference_data','agg_results','final_agg_2label.csv')
     res_files = os.listdir(res_dir)
     res_files = [f for f in res_files if '~' not in f]
 
@@ -67,7 +67,8 @@ if __name__ == "__main__":
     #%%
     final_agg_df = pd.concat(agg_res_dfs)
     final_agg_df = final_agg_df.groupby(group_cols)['label_count'].sum()
-    label_map = {0:'neutral',1:'positive',2:'negative'}
+    #label_map = {0:'neutral',1:'positive',2:'negative'}
+    label_map = {0:'negative',1:'positive'}
     final_agg_df.name='label_count'
     final_agg_df = pd.DataFrame(final_agg_df)
     final_agg_df.reset_index(inplace=True)
