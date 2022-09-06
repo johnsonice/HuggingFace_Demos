@@ -4,6 +4,12 @@
 Created on Mon Aug 22 11:47:57 2022
 
 @author: chengyu
+
+documentation:
+    https://www.sbert.net/docs/training/overview.html
+
+
+
 """
 from datasets import load_dataset
 from sentence_transformers import SentenceTransformer, LoggingHandler
@@ -11,6 +17,13 @@ from sentence_transformers import models, util, datasets, evaluation, losses
 from torch.utils.data import DataLoader
 import config
 import os 
+import logging
+
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    level=logging.INFO,
+                    handlers=[LoggingHandler()])
+
 
 #%%
 
@@ -31,7 +44,7 @@ if __name__ == "__main__":
     
     #%%
     # Define a list with sentences (1k - 100k sentences)
-    train_sentences=raw_dataset['train']['text']
+    train_sentences=raw_dataset['train']['text']#[:5000]
     # Create the special denoising dataset that adds noise on-the-fly
     train_dataset = datasets.DenoisingAutoEncoderDataset(train_sentences)
     # DataLoader to batch your data
