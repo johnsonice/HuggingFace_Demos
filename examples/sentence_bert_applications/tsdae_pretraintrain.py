@@ -8,15 +8,18 @@ Created on Mon Aug 22 11:47:57 2022
 documentation:
     https://www.sbert.net/docs/training/overview.html
 
-
+Some examples 
+    https://www.pinecone.io/learn/unsupervised-training-sentence-transformers/
 
 """
+import os 
 from datasets import load_dataset
 from sentence_transformers import SentenceTransformer, LoggingHandler
 from sentence_transformers import models, util, datasets, evaluation, losses
+from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
 from torch.utils.data import DataLoader
 import config
-import os 
+from eval import process_sts
 import logging
 
 logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -52,6 +55,14 @@ if __name__ == "__main__":
     # Use the denoising auto-encoder loss
     train_loss = losses.DenoisingAutoEncoderLoss(model, decoder_name_or_path=model_name, tie_encoder_decoder=True)
     #%%
+
+    ## get data and setup evaluator 
+    sts_samples = process_sts()
+    evaluator = EmbeddingSimilarityEvaluator.from_input_examples(
+        sts_samples, write_csv=False
+    )
+
+
     # Call the fit method
     model.fit(
         train_objectives=[(train_dataloader, train_loss)],
