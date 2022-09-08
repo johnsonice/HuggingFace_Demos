@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     ## get data and setup evaluator 
     sts_samples = process_sts()
-    evaluator = EmbeddingSimilarityEvaluator.from_input_examples(
+    sts_evaluator = EmbeddingSimilarityEvaluator.from_input_examples(
         sts_samples, write_csv=False
     )
 
@@ -66,7 +66,9 @@ if __name__ == "__main__":
     # Call the fit method
     model.fit(
         train_objectives=[(train_dataloader, train_loss)],
-        epochs=1,
+        evaluator=sts_evaluator,
+        evaluation_steps=1000,
+        epochs=3,
         weight_decay=0,
         scheduler='constantlr',
         optimizer_params={'lr': 3e-5},
