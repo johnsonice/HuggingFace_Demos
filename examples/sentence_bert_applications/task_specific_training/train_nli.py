@@ -4,13 +4,12 @@ import sys,os,gzip,csv,math
 sys.path.insert(0,'..')
 from sentence_transformers import models, losses, datasets
 from sentence_transformers import LoggingHandler, SentenceTransformer, util, InputExample
-from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator,TripletEvaluator
+from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator,TripletEvaluator,SequentialEvaluator
 import logging
 from datetime import datetime
 from eval import process_sts
 from data_utils import get_sbert_nli_data,add_to_samples,nli2triplet_sets,transform2triplet_inputexamples,load_all_nli_from_HF,get_HF_nli_dev_test
 
-#%%
 #### Just some code to print debug information to stdout
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -49,7 +48,7 @@ def get_sts_evaluator():
     ## get data and setup evaluator 
     sts_samples = process_sts()
     sts_evaluator = EmbeddingSimilarityEvaluator.from_input_examples(
-        sts_samples, write_csv=True
+        sts_samples, name='sts_eval',show_progress_bar=True,write_csv=True
     )
     return sts_evaluator
 
@@ -57,11 +56,16 @@ def get_triplet_loss_evaluator(split_name='dev'):
     sample = get_HF_nli_dev_test(split_name=split_name)
     
     t_evaluator = TripletEvaluator.from_input_examples(
-            sample, write_csv=True
+            sample, name=split_name,show_progress_bar=True,write_csv=True
         )
     
     return t_evaluator
-
+def maybe_create_dir(fp):
+    if os.path.exists(fp):
+        pass
+    else:
+        os.mkdir(fp)
+    return fp
 #%%
 
 if __name__ == "__main__":
@@ -78,7 +82,8 @@ if __name__ == "__main__":
     ###############################################################
     
     logging.info("Read AllNLI train dataset")
-    train_samples = prepare_anli_training_examples(data_path)
+    #train_samples = prepare_anli_training_examples(data_path)
+    train_samples = prepare_allHFnli_training_examples()
     logging.info("Train samples: {}".format(len(train_samples)))
     # Special data loader that avoid duplicates within a batch
     train_dataloader = datasets.NoDuplicatesDataLoader(train_samples, batch_size=train_batch_size)
@@ -103,17 +108,29 @@ if __name__ == "__main__":
     # set up evaluator using  : use sementic similary score 
     Triplet_evaluator_dev = get_triplet_loss_evaluator(split_name='dev')
     Triplet_evaluator_test = get_triplet_loss_evaluator(split_name='test')
-    
+
+    Multi_evaluator = SequentialEvaluator([Semetic_similarity_evaluator,Triplet_evaluator_dev],
+                                                main_score_function=lambda x:x) ## report both scores 
+                                                ## see https://www.sbert.net/docs/package_reference/evaluation.html#sentence_transformers.evaluation.SequentialEvaluator
+
+#%%
     # Configure the training
-    warmup_steps = math.ceil(len(train_dataloader) * num_epochs * 0.1) #10% of train data for warm-up
+    warmup_steps = math.ceil(len(train_dataloader) * num_epochs * 0.01) #1% of train data for warm-up
     logging.info("Warmup-steps: {}".format(warmup_steps))
+
+    ## do inital eval before training
+    maybe_create_dir(model_save_path)
+    Multi_evaluator(model,model_save_path)
 
     #%%
     # Train the model
     model.fit(train_objectives=[(train_dataloader, train_loss)],
+            optimizer_params = {'lr': 2e-5},
+            scheduler='WarmupLinear',
             evaluator=Triplet_evaluator_dev,
             epochs=num_epochs,
             evaluation_steps=int(len(train_dataloader)*0.05),
+            #checkpoint_save_steps = int(len(train_dataloader)*0.05)
             warmup_steps=warmup_steps,
             output_path=model_save_path,
             use_amp=False          #Set to True, if your GPU supports FP16 operations

@@ -70,8 +70,8 @@ if __name__ == "__main__":
         evaluation_steps=1000,
         epochs=3,
         weight_decay=0,
-        scheduler='constantlr',
-        optimizer_params={'lr': 3e-5},
+        scheduler='warmuplinear',#'constantlr',
+        optimizer_params={'lr': 2e-5}, #3e-5
         show_progress_bar=True
     )
     
