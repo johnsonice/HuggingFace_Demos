@@ -11,6 +11,13 @@ https://huggingface.co/spaces/evaluate-measurement/perplexity
 https://github.com/UKPLab/sentence-transformers/issues/1303
 TODO:
     evaluate trained model on a standard task 
+    
+    
+SBERT sequential evaluator :
+    https://github.com/UKPLab/sentence-transformers/blob/master/sentence_transformers/evaluation/SequentialEvaluator.py
+    https://www.sbert.net/docs/package_reference/evaluation.html#sentence_transformers.evaluation.SequentialEvaluator
+    https://github.com/UKPLab/sentence-transformers/issues/458
+    give it a try 
 """
 #%%
 ## Model evaluation using perplexity or MLM 
