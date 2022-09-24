@@ -7,6 +7,9 @@ https://www.sbert.net/docs/training/overview.html
 ### A nice walkthrough of Natural Language Processing for Semantic Search 
 https://www.pinecone.io/learn/nlp/
 
+### Nice explaination of all training objectives:
+https://lilianweng.github.io/posts/2021-05-31-contrastive/
+
 ### pretrained model options 
 https://www.sbert.net/docs/pretrained_models.html
 
