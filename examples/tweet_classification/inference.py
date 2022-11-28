@@ -79,33 +79,3 @@ if __name__ == "__main__":
         chunk_dataset = chunk_dataset.remove_columns(['text'])
         chunk_dataset.to_csv(Inference_data_out_dir.format(f_name))
 
-#%%
-# tokenizer = AutoTokenizer.from_pretrained(MODEL)
-# config = AutoConfig.from_pretrained(MODEL)
-# # PT
-# model = AutoModelForSequenceClassification.from_pretrained(MODEL)
-# #%%
-# text = "Covid cases are increasing fast!"
-# text = preprocess(text)
-# #%%
-# encoded_input = tokenizer(text, return_tensors='pt')
-# output = model(**encoded_input)
-# scores = output[0][0].detach().numpy()
-# scores = softmax(scores)
-# # %%
-# ranking = np.argsort(scores)
-# ranking = ranking[::-1]
-# #%%
-# for i in range(scores.shape[0]):
-#     l = config.id2label[ranking[i]]
-#     s = scores[ranking[i]]
-#     print(f"{i+1}) {l} {np.round(float(s), 4)}")
-# # %%
-# ### use pip 
-# pipe = pipeline(task="text-classification",
-#                 model = MODEL,
-#                 tokenizer=MODEL,return_all_scores=True)#,device=0)
-# #%%
-# print(pipe(text))
-# print(transform_pipe_results(pipe(text)[0]))
-# #%%
