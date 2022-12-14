@@ -93,23 +93,25 @@ def whole_word_masking_data_collator(features,wwm_probability=0.2):
 #%%
 if __name__ == "__main__":
     ## specify path 
+    DATA_PROCESS_FLAG = True
     MODEL_OUTDIR = os.path.join(config.model_folder,'sentence_bert_mlm')
-    data_path= os.path.join(config.data_folder,'Data/sentence_bert/pre_training_raw_data','IMF_Documents_2018.txt')
-    DA_OUTDIR= os.path.join(config.data_folder,'Data/sentence_bert/pre_training_processed_ds')
-    model_checkpoint = "distilbert-base-uncased"
-    #%%
-    DATA_PROCESS_FLAG = False
+    DA_OUTDIR= os.path.join(config.data_folder,'Data/sentence_bert/mlm_pre_training_processed_ds')
+    #data_path= os.path.join(config.data_folder,'Data/sentence_bert/pre_training_raw_data','IMF_Documents_2018.txt')
+    data_path = os.path.join(config.data_folder,'Data/Raw_LM_Data/Processed')
+    data_files = os.listdir(data_path)
+    data_files = [os.path.join(data_path,p) for p in data_files]
     
+    model_checkpoint = "distilbert-base-uncased"
+
     ## load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
     
     if DATA_PROCESS_FLAG:
         ##process data into datastes 
-        raw_dataset = load_dataset('text', data_files=data_path) ## default split is 'train'
-        raw_ds = raw_dataset['train'].train_test_split(test_size=0.01,
+        raw_dataset = load_dataset('text', data_files=data_files) ## default split is 'train'
+        raw_ds = raw_dataset['train'].train_test_split(test_size=0.001,
                                                   shuffle=True,
                                                   seed=42)
-        
         ##tokenize data // here, it is ok to have longer sequences as we will chunk them in the next step
         tokenized_datasets = raw_ds.map(
             tokenize_function, batched=True, remove_columns=["text",]

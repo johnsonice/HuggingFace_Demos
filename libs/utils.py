@@ -1,6 +1,7 @@
 import json
 import itertools
 import pandas as pd
+import pathlib,os
 
 def load_json(f_path):
     with open(f_path) as f:
@@ -72,6 +73,27 @@ def get_best_hp_param(hp_res_dir:str,sort_col:list):
     best_param = hp_dict[df.index[0]]
     
     return best_param
+
+def get_all_files(dirName,end_with=None): # end_with=".json"
+    # create a list of file and sub directories 
+    # names in the given directory 
+    listOfFile = os.listdir(dirName)
+    allFiles = list()
+    # Iterate over all the entries
+    for entry in listOfFile:
+        # Create full path
+        fullPath = os.path.join(dirName, entry)
+        # If entry is a directory then get the list of files in this directory 
+        if os.path.isdir(fullPath):
+            allFiles = allFiles + get_all_files(fullPath)
+        else:
+            allFiles.append(fullPath)
+    
+    if end_with:
+        end_with = end_with.lower()
+        allFiles = [f for f in allFiles if pathlib.Path(f).suffix.lower() == end_with ] 
+
+    return allFiles   
 
 if __name__ == "__main__":
     
