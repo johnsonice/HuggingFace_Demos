@@ -8,11 +8,12 @@ Created on Mon Sep  5 20:03:50 2022
 ## domain adaption for MLM models 
 
 """
-
+#%%
 import os, sys 
-sys.path.insert(0,'../../libs')
+sys.path.insert(0,'../../../libs')
+sys.path.insert(0,'..')
 #from hf_utils import train_val_test_split
-
+import wandb
 from transformers import AutoModelForMaskedLM
 from transformers import AutoTokenizer
 import torch
@@ -92,8 +93,12 @@ def whole_word_masking_data_collator(features,wwm_probability=0.2):
 
 #%%
 if __name__ == "__main__":
+    ## logging training processes 
+    wandb.login()
     ## specify path 
-    DATA_PROCESS_FLAG = True
+    DATA_PROCESS_FLAG = False
+    RESUME_TRAINING = True
+
     MODEL_OUTDIR = os.path.join(config.model_folder,'sentence_bert_mlm')
     DA_OUTDIR= os.path.join(config.data_folder,'Data/sentence_bert/mlm_pre_training_processed_ds')
     #data_path= os.path.join(config.data_folder,'Data/sentence_bert/pre_training_raw_data','IMF_Documents_2018.txt')
@@ -138,12 +143,12 @@ if __name__ == "__main__":
     print(f"'>>> DistilBERT number of parameters: {round(distilbert_num_parameters)}M'")
     #print(f"'>>> BERT number of parameters: 110M'")
     
-    batch_size = 64
+    batch_size = 32
     # Show the training loss with every epoch or fix steps 
     #logging_steps = len(lm_datasets["train"]) // batch_size
     logging_steps = 256
     
-    model_name = model_checkpoint.split("/")[-1]+'imf_mlm'
+    model_name = model_checkpoint.split("/")[-1]+'_imf_mlm'
     #model_out_dir = os.path.join(config.data_folder,'MLM','models',"{}-finetuned-imdb".format(model_name))
     
     training_args = TrainingArguments(
@@ -153,13 +158,18 @@ if __name__ == "__main__":
         evaluation_strategy="steps",
         logging_steps=logging_steps,
         eval_steps=10*logging_steps,
+        save_steps= 10*logging_steps,
         learning_rate=2e-5,
         weight_decay=0.01,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         #push_to_hub=False,  ## just run locally for now 
         fp16=True,
-        remove_unused_columns=remove_unused_columns
+        remove_unused_columns=remove_unused_columns,
+        save_total_limit = 5,
+        ###WanB related arguments
+        report_to="wandb",
+        run_name=model_name
     )
 
     trainer = Trainer(
@@ -175,7 +185,8 @@ if __name__ == "__main__":
     print(trainer.evaluate())
     
     #%%
-    trainer.train()
+    trainer.train(resume_from_checkpoint=RESUME_TRAINING)
+    
     
     
     
