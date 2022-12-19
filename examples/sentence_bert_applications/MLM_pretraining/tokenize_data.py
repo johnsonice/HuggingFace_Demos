@@ -20,6 +20,8 @@ from transformers import default_data_collator
 #import config
 from utils import get_all_files,txt2list
 from arguments import tokenize_args
+from multiprocessing import cpu_count
+
 #%%
 def tokenize_function(examples):
     result = tokenizer(examples["text"])
@@ -73,6 +75,7 @@ def whole_word_masking_data_collator(features,wwm_probability=0.2):
 
 if __name__ == "__main__":
     
+    N_cpu = cpu_count() - 8
     args = tokenize_args()
     print(args)
     
@@ -105,7 +108,10 @@ if __name__ == "__main__":
                                                 seed=42)
     ##tokenize data // here, it is ok to have longer sequences as we will chunk them in the next step
     tokenized_datasets = raw_ds.map(
-        tokenize_function, batched=True, remove_columns=["text",]
+        tokenize_function, 
+        batched=True, 
+        remove_columns=["text",],
+        num_proc = N_cpu
     )
     ## chunk data into fixed length text sequences
     lm_datasets = tokenized_datasets.map(group_texts, batched=True)

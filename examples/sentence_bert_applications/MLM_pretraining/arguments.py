@@ -12,6 +12,8 @@ import os, sys
 sys.path.insert(0,'../libs')
 sys.path.insert(0,'..')
 import config 
+from transformers import TrainingArguments
+from dataclasses import dataclass, field
 
 
 def vocab_aug_args():
@@ -36,14 +38,14 @@ def tokenize_args():
     parser.add_argument('--data_folder', action='store', dest='data_folder',
                         default=config.data_folder,type=str) 
     parser.add_argument('--input_files_folder', action='store', dest='input_files_folder',
-                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_Small'),type=str) 
+                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_Medium'),type=str) 
     parser.add_argument('--model_folder', action='store', dest='model_folder',
                         default=os.path.join(config.data_folder,'Models'),type=str)
     parser.add_argument('--ds_out_folder', 
                         action='store', 
                         dest='ds_out_folder',
                         default=os.path.join(config.data_folder,
-                                 'Data/sentence_bert/mlm_pre_training_processed_{}'.format(config.default_model_checkpoint)),
+                                 'Data/sentence_bert/mlm_pre_training_processed_{}_Medium'.format(config.default_model_checkpoint)),
                                 type=str)
     parser.add_argument('--cache_dir', action='store', dest='cache_dir',
                         default=os.path.join(config.data_folder,'cache'),type=str) 
@@ -54,31 +56,48 @@ def tokenize_args():
     return args
 
 
-
-def training_args():
+@dataclass
+class ModelTrainingArguments(TrainingArguments):
     """
-    设置训练参数
+    training params 
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model_name_or_path', default= 'roberta-base' , type=str, required=True, help='')
-    parser.add_argument('--data', default= config.data_folder , type=str, required=False, help='')
-    parser.add_argument('--per_device_train_batch_size', default= 16 , type=int, required=False, help='')
-    parser.add_argument('--learning_rate', default= 1e-4 , type=float, required=False, help='')
-    parser.add_argument('--num_train_epochs', default= 5 , type=int, required=False, help='')
-    parser.add_argument('--output_dir', default= 'model_1' , type=str, required=False, help='')
-    parser.add_argument('--save_epoch', default= 2 , type=int, required=False, help='')
-    parser.add_argument('--save_steps', default= 5000 , type=int, required=False, help='')
-    # adv
-    parser.add_argument("--weight_decay", default=1e-7,type=float)
-    parser.add_argument("--max_grad_norm", default=1,type=float)
-    parser.add_argument("--warmup_steps", default=5000,type=float)
-
-    # distributed learning
-    parser.add_argument("--local_rank",
-                        type=int,
-                        default=os.getenv('LOCAL_RANK', -1),
-                        help="Local rank. Necessary for using the torch.distributed.launch utility")
+    ## global pathes 
+    model_name_or_path: str = os.path.join(config.data_folder,'Models',config.default_model_checkpoint)
+    data: str = os.path.join(config.data_folder,
+                             'Data/sentence_bert/mlm_pre_training_processed_{}_Small'.format(config.default_model_checkpoint))
+    output_dir: str = os.path.join(config.data_folder,'Models',config.default_model_checkpoint + '_adapted_Small')
+    additional_vocab_path: str = os.path.join(config.data_folder,'Models','imf_vocab_aug_500.txt')
     
-  
-    return parser.parse_args()
+    ## global traning params  
+    local_rank: int = os.getenv('LOCAL_RANK', -1) # set to run the distributed training
+    dataloader_num_workers: int = 1
+    per_device_train_batch_size: int = 4
+    per_device_eval_batch_size: int = 4
+    gradient_accumulation_steps: int = 1
+    #seq_length: int = 512
+    total_steps: int = 125_000  # set to control the total number of optimizer schedule steps
+    max_steps: int = -1  # meant the total training steps
+    learning_rate: float = 1e-4
+    logging_steps: int = 500
+    save_total_limit: int = 2
+    save_steps: int = 5000
+    num_train_epochs: int = 5
+    
+    ## other traning prams 
+    warmup_steps: int = 5000
+    adam_epsilon: float = 1e-6
+    weight_decay: float = 1e-7
+    max_grad_norm: float = 1.0
+    clamp_value: float = 10000.0
+    # fp16: bool = False
+    # fp16_opt_level: str = "O2"
+    do_train: bool = True
+    do_eval: bool = True  # maybe want to set this to false if data is large 
 
+if __name__ == '__main__':
+    from transformers import HfArgumentParser
+    parser = HfArgumentParser(
+            ModelTrainingArguments,
+    )
+    args = parser.parse_args_into_dataclasses()[0]
+    print(args)
