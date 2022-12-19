@@ -106,12 +106,12 @@ if __name__ == "__main__":
     MULTI = True
     ## overall global variables 
     #data_folder = os.path.join(config.data_folder,'Data','Raw_LM_Data','RAW')
-    data_folder = os.path.join('F:/Download/Language_Model_Training_Data\BERT_PRE_TRAIN_DATA')
-    input_folder = os.path.join(data_folder,'RAW','SPR')
-    out_folder = os.path.join(data_folder,'CLEAN')
+    data_folder = os.path.join('/data/chuang/Language_Model_Training_Data/Data/Raw_LM_Data')
+    input_folder = os.path.join(data_folder,'RAW_Large')
+    out_folder = os.path.join(data_folder,'CLEAN_Large')
     keep_tags = ['<Para>','<Title>','<Footnote>']
     input_files = get_all_files(input_folder,'.txt')
-    
+    #%%
     #input_files = input_files[:1000]
     if MULTI:
         number_of_cpu = joblib.cpu_count() - 2 

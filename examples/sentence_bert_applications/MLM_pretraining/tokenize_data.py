@@ -5,21 +5,22 @@
 ## txt data to tokens for MLM models 
 """
 import os, sys 
-sys.path.insert(0,'../../../libs')
+sys.path.insert(0,'../libs')
 sys.path.insert(0,'..')
 #from hf_utils import train_val_test_split
-import wandb
-from transformers import AutoModelForMaskedLM
+#import wandb
+#from transformers import AutoModelForMaskedLM
 from transformers import AutoTokenizer
-import torch
+#import torch
 from datasets import load_dataset,load_from_disk
-from transformers import DataCollatorForLanguageModeling
+#from transformers import DataCollatorForLanguageModeling
 import collections
 import numpy as np
 from transformers import default_data_collator
-import config
-from utils import get_all_files
-
+#import config
+from utils import get_all_files,txt2list
+from arguments import tokenize_args
+#%%
 def tokenize_function(examples):
     result = tokenizer(examples["text"])
     if tokenizer.is_fast:
@@ -71,18 +72,34 @@ def whole_word_masking_data_collator(features,wwm_probability=0.2):
     return default_data_collator(features)
 
 if __name__ == "__main__":
-
-    MODEL = "distilbert-base-uncased"
-    DA_CACHE = os.path.join(config.data_folder,'cache')
-    DA_OUTDIR= os.path.join(config.data_folder,'Data/sentence_bert/mlm_pre_training_processed_{}'.format(MODEL))
+    
+    args = tokenize_args()
+    print(args)
+    
+    MODEL = args.model_checkpoint
+    DA_CACHE = args.cache_dir
+    DA_OUTDIR= args.ds_out_folder #os.path.join(config.data_folder,'Data/sentence_bert/mlm_pre_training_processed_{}'.format(MODEL))
     #data_path= os.path.join(config.data_folder,'Data/sentence_bert/pre_training_raw_data','IMF_Documents_2018.txt')
-    IN_DA_FOLDER = os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN')
+    IN_DA_FOLDER = args.input_files_folder
     data_files = get_all_files(IN_DA_FOLDER,'.txt')
-    #%%
-    tokenizer = AutoTokenizer.from_pretrained(MODEL)
 
+    tokenizer = AutoTokenizer.from_pretrained(MODEL)
+    if args.vocab_aug:
+        v_p = os.path.join(args.model_folder,'imf_vocab_aug_500.txt')
+        print('expand original vocabulary for tokenization; load from {}'.format(v_p))
+        new_tokens = txt2list(v_p)
+        print('original vocab size: {}'.format(tokenizer.vocab_size))
+        tokenizer.add_tokens(new_tokens)
+        #model.resize_token_embeddings(len(tokenizer))
+        print('new vocab size: {}'.format(len(tokenizer)))
+        
     ##process data into datastes 
-    raw_dataset = load_dataset('text', data_files=data_files,cache_dir=DA_CACHE) ## default split is 'train'
+    try:
+        raw_dataset = load_dataset('text', data_files=data_files,cache_dir=DA_CACHE) ## default split is 'train'
+    except:
+        local_script = os.path.join(args.data_folder,'local_scripts','text.py')
+        raw_dataset = load_dataset(local_script, data_files=data_files,cache_dir=DA_CACHE)
+    
     raw_ds = raw_dataset['train'].train_test_split(test_size=0.001,
                                                 shuffle=True,
                                                 seed=42)
@@ -92,7 +109,7 @@ if __name__ == "__main__":
     )
     ## chunk data into fixed length text sequences
     lm_datasets = tokenized_datasets.map(group_texts, batched=True)
-    #%%
+
     lm_datasets.save_to_disk(DA_OUTDIR)
     print(lm_datasets)
-# %%
+
