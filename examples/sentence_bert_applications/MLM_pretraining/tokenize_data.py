@@ -75,7 +75,7 @@ def whole_word_masking_data_collator(features,wwm_probability=0.2):
 
 if __name__ == "__main__":
     
-    N_cpu = cpu_count() - 8
+    N_cpu = 8 #cpu_count() - 8
     args = tokenize_args()
     print(args)
     

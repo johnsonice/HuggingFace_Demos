@@ -38,14 +38,14 @@ def tokenize_args():
     parser.add_argument('--data_folder', action='store', dest='data_folder',
                         default=config.data_folder,type=str) 
     parser.add_argument('--input_files_folder', action='store', dest='input_files_folder',
-                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_Medium'),type=str) 
+                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_Large'),type=str) 
     parser.add_argument('--model_folder', action='store', dest='model_folder',
                         default=os.path.join(config.data_folder,'Models'),type=str)
     parser.add_argument('--ds_out_folder', 
                         action='store', 
                         dest='ds_out_folder',
                         default=os.path.join(config.data_folder,
-                                 'Data/sentence_bert/mlm_pre_training_processed_{}_Medium'.format(config.default_model_checkpoint)),
+                                 'Data/sentence_bert/mlm_pre_training_processed_{}_Large'.format(config.default_model_checkpoint)),
                                 type=str)
     parser.add_argument('--cache_dir', action='store', dest='cache_dir',
                         default=os.path.join(config.data_folder,'cache'),type=str) 

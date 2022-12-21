@@ -58,6 +58,8 @@ if __name__ == "__main__":
     #data_collator = whole_word_masking_data_collator
     optimizer = get_optimizer(model,args)
     ## start training
-    train(tokenizer, data_collator, dataset, model, optimizer, args)
-    
-    
+    T = train(tokenizer, data_collator, dataset, model, optimizer, args)
+    ## save last iteration of the model 
+    T.save_model(args.output_dir)
+    eval_res = T.evaluate() 
+    print('Evaluation Results: {}'.format(eval_res))

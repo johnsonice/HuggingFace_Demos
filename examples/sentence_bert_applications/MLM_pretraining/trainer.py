@@ -54,3 +54,5 @@ def train(tokenizer, data_collator, tokenized_datasets, model, optimizer, args):
         )
 
         trainer.train(resume_from_checkpoint=latest_checkpoint_dir)
+        
+    return trainer
