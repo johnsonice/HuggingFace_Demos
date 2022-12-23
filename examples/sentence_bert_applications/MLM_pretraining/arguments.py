@@ -6,6 +6,7 @@ Created on Fri Dec 16 13:31:09 2022
 @author: chuang
 """
 
+#%%
 
 import argparse
 import os, sys 
@@ -94,6 +95,7 @@ class ModelTrainingArguments(TrainingArguments):
     do_train: bool = True
     do_eval: bool = True  # maybe want to set this to false if data is large 
 
+#%%
 if __name__ == '__main__':
     from transformers import HfArgumentParser
     parser = HfArgumentParser(
@@ -101,3 +103,4 @@ if __name__ == '__main__':
     )
     args = parser.parse_args_into_dataclasses()[0]
     print(args)
+# %%
