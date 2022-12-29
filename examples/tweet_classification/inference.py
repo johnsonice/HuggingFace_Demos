@@ -42,8 +42,8 @@ ft = Features({'created_at':Value('string'),
 if __name__ == "__main__":    
     ### use lattest roberta based twitter sentiment model 
     MODEL = f"cardiffnlp/twitter-roberta-base-sentiment-latest"
-    Inference_data_folder = '/home/chuang/Dev/DATA/tweet_by_year'
-    Inference_data_out_dir = '/home/chuang/Dev/DATA/tweet_by_year_res/{}'
+    Inference_data_folder = '/data/chuang/Twitter_Data/tweet_by_year'
+    Inference_data_out_dir = '/data/chuang/Twitter_Data/tweet_by_year_res/{}'
     Raw_Columns = ['created_at','lang','id','text']
     #%%
     config = AutoConfig.from_pretrained(MODEL)
@@ -53,6 +53,8 @@ if __name__ == "__main__":
                     tokenizer=MODEL,return_all_scores=True)#,device=0)
     #%%
     all_in_files = os.listdir(Inference_data_folder)
+    all_in_files = [f for f in all_in_files if '.csv' in f]
+    #%%
     for f_name in all_in_files:
         Inference_data_dir = os.path.join(Inference_data_folder,f_name)
         print('\n\n......processing {} ......\n\n'.format(f_name))
