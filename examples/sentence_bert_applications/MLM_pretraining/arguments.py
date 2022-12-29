@@ -81,6 +81,8 @@ class ModelTrainingArguments(TrainingArguments):
     logging_steps: int = 500
     save_total_limit: int = 2
     save_steps: int = 5000
+    evaluation_strategy: str="steps"
+    eval_steps: int = 100000
     num_train_epochs: int = 5
     
     ## other traning prams 
