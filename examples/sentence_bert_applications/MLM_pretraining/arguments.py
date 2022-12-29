@@ -6,8 +6,6 @@ Created on Fri Dec 16 13:31:09 2022
 @author: chuang
 """
 
-#%%
-
 import argparse
 import os, sys 
 sys.path.insert(0,'../libs')
@@ -72,11 +70,12 @@ class ModelTrainingArguments(TrainingArguments):
     ## global traning params  
     local_rank: int = os.getenv('LOCAL_RANK', -1) # set to run the distributed training
     dataloader_num_workers: int = 1
+    n_gpu: int = 2
     per_device_train_batch_size: int = 4
     per_device_eval_batch_size: int = 4
     gradient_accumulation_steps: int = 1
     #seq_length: int = 512
-    total_steps: int = 125_000  # set to control the total number of optimizer schedule steps
+    total_steps: int = -1 # 125_000 #set to -1 to use total lenght of training steps  # set to control the total number of optimizer schedule steps
     max_steps: int = -1  # meant the total training steps
     learning_rate: float = 1e-4
     logging_steps: int = 500
@@ -95,7 +94,7 @@ class ModelTrainingArguments(TrainingArguments):
     do_train: bool = True
     do_eval: bool = True  # maybe want to set this to false if data is large 
 
-#%%
+
 if __name__ == '__main__':
     from transformers import HfArgumentParser
     parser = HfArgumentParser(
@@ -103,4 +102,4 @@ if __name__ == '__main__':
     )
     args = parser.parse_args_into_dataclasses()[0]
     print(args)
-# %%
+

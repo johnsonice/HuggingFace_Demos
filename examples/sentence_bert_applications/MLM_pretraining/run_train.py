@@ -5,6 +5,7 @@ Created on Mon Dec 19 15:55:24 2022
 
 @author: chuang
 """
+#%%
 from transformers import AutoModelForCausalLM, DataCollatorForLanguageModeling,default_data_collator
 import collections
 import numpy as np
@@ -15,9 +16,10 @@ from optimizer import get_optimizer
 from arguments import ModelTrainingArguments
 from transformers import HfArgumentParser
 from trainer import train
+from functools import partial
 #import wandb
 
-def whole_word_masking_data_collator(features,wwm_probability=0.2):
+def whole_word_masking_data_collator(features,tokenizer,wwm_probability=0.2):
     for feature in features: 
         word_ids = feature.pop("word_ids")  ## data collator does not take word_ids
  
@@ -54,9 +56,10 @@ if __name__ == "__main__":
     args = parser.parse_args_into_dataclasses()[0]
     model, tokenizer = get_model(args)
     dataset = get_data(args)
-    data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
-    #data_collator = whole_word_masking_data_collator
+    #data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
+    data_collator = partial(whole_word_masking_data_collator,tokenizer=tokenizer)
     optimizer = get_optimizer(model,args)
+
     ## start training
     T = train(tokenizer, data_collator, dataset, model, optimizer, args)
     ## save last iteration of the model 
