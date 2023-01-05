@@ -10,11 +10,17 @@ def list2txt(contents,f_p):
         print('export to {}'.format(f_p))
         
 def txt2list(f_p):
-    with open(f_p,'r',encoding='utf8') as fp:
-        contents = fp.readlines()
-        contents = [c.strip('\n') for c in contents]
-    return contents
-
+    encodings = ['utf8','cp1252','latin-1']
+    for enc in encodings:
+        try:
+            with open(f_p,'r',encoding='utf8',errors='ignore') as fp:
+                contents = fp.readlines()
+                contents = [c.strip('\n').strip() for c in contents]
+            return contents
+        except:
+            ## print error log
+            pass
+    raise('encoding error for {}'.format(f_p))
 
 def load_json(f_path):
     with open(f_path) as f:
