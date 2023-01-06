@@ -11,6 +11,12 @@ import numpy as np
 if (not os.environ.get('PYTHONHTTPSVERIFY', '') and
 getattr(ssl, '_create_unverified_context', None)):
     ssl._create_default_https_context = ssl._create_unverified_context
+import joblib
+from joblib import Parallel, delayed
+import copy, time
+from utils import chunks
+import warnings
+warnings.filterwarnings("ignore")
 
 ## topic model packages
 from bertopic import BERTopic
@@ -22,6 +28,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sentence_transformers import SentenceTransformer
 from umap import UMAP
 from hdbscan import HDBSCAN
+from topic_evaluator import eval_coherence_score, eval_diversity_score
 
 ## import arguments 
 from topic_arguments import topic_model_args, train_args_space, topic_rep_args_space
@@ -88,73 +95,80 @@ def model_setup(train_args):
                     diversity= train_args.diversity,            # Step 6 - Diversify topic words ; maybe also try 0.5?
                     ## other params 
                     language="English",
-                    verbose=True,
+                    verbose=args.verbose,
                     top_n_words=train_args.top_n_words,         # number of topic words to return; can be changed after model is trained 
                                                                 # https://maartengr.github.io/BERTopic/api/bertopic.html#bertopic._bertopic.BERTopic.update_topics
                     min_topic_size=train_args.min_cluster_size, # this should be the same as min_cluster_size in HDBSCAN
                     nr_topics='auto',               # number of topics you want to reduce to ; auto will use results from HDBSCAN on c-tfidf
-                    calculate_probabilities = False, # Whether to calculate the probabilities of all topics per document instead of the probability of the assigned topic per document. 
+                    calculate_probabilities = args.calculate_probabilities, # Whether to calculate the probabilities of all topics per document instead of the probability of the assigned topic per document. 
                     )
     
     return topic_model 
 
-def prepare_docs_for_coherence_eval(docs,topics,probabilities,model):
-    documents = pd.DataFrame({"Document": docs,
-                          "ID": range(len(docs)),
-                          "Topic": topics,
-                          "Topic_prob": probabilities})
-    documents_per_topic = documents.groupby(['Topic'], as_index=False).agg({'Document': ' '.join})
-    #print(documents_per_topic.head())
-    # Extract vectorizer and analyzer from BERTopic
-    vectorizer = model.vectorizer_model
-    analyzer = vectorizer.build_analyzer()
-    cleaned_docs = model._preprocess_text(documents_per_topic.Document.values)
-    # Extract features for Topic Coherence evaluation
-    words = vectorizer.get_feature_names()
-    tokens = [analyzer(doc) for doc in cleaned_docs]
-    dictionary = corpora.Dictionary(tokens)
-    corpus = [dictionary.doc2bow(token) for token in tokens]
-    topic_words = [[words for words, _ in model.get_topic(topic) if words!=''] 
-                for topic in range(len(set(topics))-1)]
-    topic_words = [t for t in topic_words if len(t) >0] ## for some reason some topics has all "" as topic words
-
-    return topic_words,tokens,corpus,dictionary
-
-def get_coherence_score(topic_words,tokens,corpus,dictionary):
-    # Evaluate
-    coherence_model = CoherenceModel(topics=topic_words, 
-                                    texts=tokens, 
-                                    corpus=corpus,
-                                    dictionary=dictionary, 
-                                    coherence='c_v')
-    coherence = coherence_model.get_coherence()
-    
-    return coherence
-
-def eval_coherence_score(docs,topics,probabilities,model):
-    topic_words,tokens,corpus,dictionary = prepare_docs_for_coherence_eval(docs,topics,probabilities,model)
-    coherence = get_coherence_score(topic_words,tokens,corpus,dictionary)
-    return coherence
-
-def train_and_eval(args,docs,embeddings):
+def train_topic_model(args,docs,embeddings):
     topic_model = model_setup(args)
     topics, probabilities = topic_model.fit_transform(docs,embeddings)
     if isinstance(probabilities,np.ndarray):
         probabilities = probabilities.tolist()
 
-    scores = eval_coherence_score(docs,topics,probabilities,topic_model)
+    return topics,probabilities,topic_model
 
+def eval_topic_model(docs,topics,probabilities,topic_model):
+    coherence_scores = eval_coherence_score(docs,topics,probabilities,topic_model)
     topic_freq = topic_model.get_topic_freq()
     outlier_percent = topic_freq['Count'][topic_freq['Topic'] == -1].iloc[0]/topic_freq['Count'].sum()
+    n_topics = len(topic_model.get_topic_freq())
+    diversity_score = eval_diversity_score(topic_model)
     
+    return coherence_scores,outlier_percent,n_topics,diversity_score
+
+def train_and_eval(args,docs,embeddings):
+
+    topics,probabilities,topic_model = train_topic_model(args,docs,embeddings)
+    coherence_scores,outlier_percent,n_topics,diversity_score = eval_topic_model(docs,topics,probabilities,topic_model)
     ## you probably aldo don't want too many outliers 
     ## other than tune cluster size, you can also try reducer outliers after model is trained 
     #https://maartengr.github.io/BERTopic/api/bertopic.html#bertopic._bertopic.BERTopic.reduce_outliers
 
-    return scores,outlier_percent,topic_model
+    return coherence_scores,outlier_percent,n_topics,diversity_score
+
+def pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score):
+    eval_dict = {
+        'coherence': coherence_scores,
+        'diversity': diversity_score,
+        'outlier': outlier_percent,
+        'number_topics': n_topics,
+    }
+    if param:
+        param.update(eval_dict)
+        return param
+    else:
+        return eval_dict
+
+def get_param_results(param,args,docs,embeddings):
+    if param:
+        args.__dict__.update(param)
+    coherence_scores,outlier_percent,n_topics,diversity_score = train_and_eval(args,docs,embeddings)
+    res = pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score)
+    return res
+
+def multi_process_func(param,args,docs,embeddings):
+    """put all eval metric in one func for multi process"""
+    if param:
+        args.__dict__.update(param)
+    topics,probabilities,topic_model=train_topic_model(args,docs,embeddings)
+    return(param,topics,probabilities,topic_model)
+
+def multi_process_eval_func(multi_model_returns):
+    param,topics,probabilities,topic_model = multi_model_returns
+    coherence_scores,outlier_percent,n_topics,diversity_score= eval_topic_model(docs,topics,probabilities,topic_model)
+    updated_param = pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score)
+    return updated_param
 
 #%%
 if __name__ == "__main__":
+    startTime = time.time()
+
     args = topic_model_args()
     ## set paths 
     data_folder = args.data_folder
@@ -164,12 +178,8 @@ if __name__ == "__main__":
     docs_path = os.path.join(out_folder,'docs.npy')
     result_path = os.path.join(out_folder,'results.csv')
 
-    #input_files = get_all_files(input_folder,'.txt')
-    LOAD_EMB = True
-    TUNE = True
-
     ## set up topics models 
-    if not LOAD_EMB:
+    if not args.LOAD_EMB:
         ## read raw documents 
         docs = read_all_data(input_folder)
         ## load model 
@@ -192,32 +202,66 @@ if __name__ == "__main__":
     ## for testing purpose, try a small sample size 
     embeddings = embeddings[:50000]
     docs = docs[:50000]
+    #%%
+    ## test trying loop with small params 
+    if args.test_run:
+        train_args_space = train_args_space[:40]
 
     results = []
-    if TUNE:
-        for params in tqdm(train_args_space):
-            args.__dict__.update(params)
-            print(args)
-            try:
-                scores,outlier_percent,topic_model = train_and_eval(args,docs,embeddings)
-                n_topics = len(topic_model.get_topic_freq())
-                results.append(params.update(
-                                                {
-                                                    'score':scores,
-                                                    'outlier_share':outlier_percent,
-                                                    'n_topics': n_topics
-                                                }
-                                            )
-                                )
-                print('score: {} outlier share: {} number_topics: {}'.format(scores,outlier_percent,n_topics))
-            except:
-                print('-- Error -- {}'.format(params))
+    if args.TUNE:
+        if args.n_worker>1:
+            args_copy = copy.deepcopy(args)
+            number_of_cpu = args.n_worker #joblib.cpu_count() - 2 
+            parallel_pool = Parallel(n_jobs=number_of_cpu,verbose=5, backend='loky')
+
+            batched_train_args_space = list(chunks(train_args_space,args.chunk_size))
+            for args_space in tqdm(batched_train_args_space):
+                delayed_funcs = [delayed(multi_process_func)(p,args_copy,docs,embeddings) for p in args_space]
+                multi_traind_models = parallel_pool(delayed_funcs)
+                ## for some reason i can 't paralleize evaluation calculation 
+                # delayed_funcs2 = [delayed(multi_process_func)(m) for m in multi_traind_models]
+                # results = parallel_pool(delayed_funcs2)
+                for param,topics,probabilities,topic_model in tqdm(multi_traind_models):
+                    if args.verbose:
+                        print("calculating evaluation scores for {}".format(param))
+                    coherence_scores,outlier_percent,n_topics,diversity_score= eval_topic_model(docs,topics,probabilities,topic_model)
+                    updated_param = pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score)
+                    results.append(updated_param)
+                    res_df = pd.DataFrame(results)
+                    res_df.to_csv(result_path)
+        else:
+            for idx,params in enumerate(tqdm(train_args_space)):
+                args.__dict__.update(params)
+                try:
+                    # scores,outlier_percent,topic_model = train_and_eval(args,docs,embeddings)
+                    # n_topics = len(topic_model.get_topic_freq())
+                    updated_params = get_param_results(params,args,docs,embeddings)
+                    results.append(updated_params)
+                    if args.verbose:
+                        print(updated_params)
+                except Exception as e:
+                    print('-- Error -- \n{}\n{}'.format(params,e))
+                    results.append(params)
+                ## write out every 5 steps 
+                if idx%5 == 0:
+                    res_df = pd.DataFrame(results)
+                    res_df.to_csv(result_path)
+
         res_df = pd.DataFrame(results)
         res_df.to_csv(result_path)
     else:
         print(args)
-        scores,outlier_percent,topic_model = train_and_eval(args,docs,embeddings)
-        n_topics = len(topic_model.get_topic_freq())
-        print('score: {} outlier share: {} number_topics: {}'.format(scores,outlier_percent,n_topics))
+        for i in tqdm(range(4)):
+            res = get_param_results(None,args,docs,embeddings)
+            print(res)
+        # scores,outlier_percent,topic_model = train_and_eval(args,docs,embeddings)
+        # n_topics = len(topic_model.get_topic_freq())
+        # diversity_score = eval_diversity_score(topic_model)
+        # print('score: {} diversity score: {} outlier share: {} number_topics: {}'.format(scores,diversity_score,outlier_percent,n_topics))
 
- 
+    executionTime = (time.time() - startTime)
+    print('Execution time in seconds: ' + str(executionTime))
+ ## to be improved 
+ # - count vectorvizer, remove integer numbers see topic_model.vectorizer_model.get_feature_names(); many doesn't make sense
+ # - more topic evaluation on coherence and diversity https://github.com/MaartenGr/BERTopic/issues/594
+ #  --- https://github.com/MIND-Lab/OCTIS

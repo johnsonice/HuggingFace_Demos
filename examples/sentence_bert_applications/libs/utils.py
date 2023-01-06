@@ -114,6 +114,11 @@ def get_all_files(dirName,end_with=None): # end_with=".json"
 
     return allFiles   
 
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
 #%%
 if __name__ == "__main__":
     
