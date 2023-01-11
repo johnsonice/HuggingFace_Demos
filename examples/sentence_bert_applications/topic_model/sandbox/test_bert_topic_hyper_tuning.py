@@ -29,6 +29,7 @@ from sentence_transformers import SentenceTransformer
 from umap import UMAP
 from hdbscan import HDBSCAN
 from topic_evaluator import eval_coherence_score, eval_diversity_score
+#from gensim.models.coherencemodel import CoherenceModel
 
 ## import arguments 
 from topic_arguments import topic_model_args, train_args_space, topic_rep_args_space
@@ -123,19 +124,10 @@ def eval_topic_model(docs,topics,probabilities,topic_model,n_workers=1):
     
     return coherence_scores,outlier_percent,n_topics,diversity_score
 
-def train_and_eval(args,docs,embeddings,n_workers=1):
-    try:
-        topics,probabilities,topic_model = train_topic_model(args,docs,embeddings)
-    except Exception as e:
-        print('--Topic Model training error -- \n{}'.format(e))
-        topics,probabilities,topic_model = (None,None,None)
-    
-    if topic_model is not None:
-        coherence_scores,outlier_percent,n_topics,diversity_score = eval_topic_model(docs,topics,probabilities,
-                                                                                topic_model,n_workers=n_workers)
-    else:
-        coherence_scores,outlier_percent,n_topics,diversity_score = (None,None,None,None)
-    
+def train_and_eval(args,docs,embeddings):
+
+    topics,probabilities,topic_model = train_topic_model(args,docs,embeddings)
+    coherence_scores,outlier_percent,n_topics,diversity_score = eval_topic_model(docs,topics,probabilities,topic_model,n_workers=1)
     ## you probably aldo don't want too many outliers 
     ## other than tune cluster size, you can also try reducer outliers after model is trained 
     #https://maartengr.github.io/BERTopic/api/bertopic.html#bertopic._bertopic.BERTopic.reduce_outliers
@@ -158,46 +150,43 @@ def pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_
 def get_param_results(param,args,docs,embeddings):
     if param:
         args.__dict__.update(param)
-    try:
-        coherence_scores,outlier_percent,n_topics,diversity_score = train_and_eval(args,docs,embeddings)
-    except Exception as e:
-        print('-- Error -- \n{}\n{}'.format(param,e))
-        coherence_scores,outlier_percent,n_topics,diversity_score = (None,None,None,None)
+    coherence_scores,outlier_percent,n_topics,diversity_score = train_and_eval(args,docs,embeddings)
     res = pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score)
     return res
 
-# def multi_process_func(param,args,docs,embeddings):
-#     """put all eval metric in one func for multi process"""
-#     if param:
-#         args.__dict__.update(param)
-#     try:
-#         topics,probabilities,topic_model=train_topic_model(args,docs,embeddings)
-#     except Exception as e:
-#         print('-- Error -- \n{}\n{}'.format(param,e))
-#         return (param,None,None,None)
-#     return(param,topics,probabilities,topic_model)
+def multi_process_func(param,args,docs,embeddings):
+    """put all eval metric in one func for multi process"""
+    if param:
+        args.__dict__.update(param)
+    try:
+        topics,probabilities,topic_model=train_topic_model(args,docs,embeddings)
+    except Exception as e:
+        print('-- Error -- \n{}\n{}'.format(param,e))
+        return (param,None,None,None)
+    return(param,topics,probabilities,topic_model)
 
-# def multi_process_eval_func(multi_model_returns):
-#     param,topics,probabilities,topic_model = multi_model_returns
-#     if topic_model is None:
-#         coherence_scores,outlier_percent,n_topics,diversity_score= (None,None,None,None)
-#     else:
-#         coherence_scores,outlier_percent,n_topics,diversity_score= eval_topic_model(docs,topics,probabilities,topic_model)
-#     updated_param = pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score)
-#     return updated_param
+def multi_process_eval_func(multi_model_returns,docs):
+    param,topics,probabilities,topic_model = multi_model_returns
+    if topic_model is None:
+        coherence_scores,outlier_percent,n_topics,diversity_score= (None,None,None,None)
+    else:
+        coherence_scores,outlier_percent,n_topics,diversity_score= eval_topic_model(docs,topics,probabilities,topic_model)
+    updated_param = pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score)
+    return updated_param
 
 #%%
 if __name__ == "__main__":
     startTime = time.time()
 
-    args = topic_model_args()
+    args = topic_model_args(['--tune','--test_run','--n_worker', '4','--chunk_size', '4'])
+    #%%
     ## set paths 
     data_folder = args.data_folder
     input_folder = args.input_files_folder
     out_folder = args.out_folder
     emb_path = os.path.join(out_folder,'sentence_embeddings.npy')
     docs_path = os.path.join(out_folder,'docs.npy')
-    result_path = args.result_path
+    result_path = os.path.join(out_folder,'results_v2.csv')
 
     ## set up topics models 
     if not args.LOAD_EMB:
@@ -242,16 +231,12 @@ if __name__ == "__main__":
                 results.extend(multi_res)
                 res_df = pd.DataFrame(results)
                 res_df.to_csv(result_path)
-                
-                ###################################
-                ## old step by step multi process##
-                ################################### 
 
                 # delayed_funcs = [delayed(multi_process_func)(p,args_copy,docs,embeddings) for p in args_space]
                 # multi_traind_models = parallel_pool(delayed_funcs)
-                # ## for some reason i can 't paralleize evaluation calculation 
-                # # delayed_funcs2 = [delayed(multi_process_func)(m) for m in multi_traind_models]
-                # # results = parallel_pool(delayed_funcs2)
+                # # for some reason i can 't paralleize evaluation calculation 
+                # delayed_funcs2 = [delayed(multi_process_eval_func)(m,docs) for m in multi_traind_models]
+                # results = parallel_pool(delayed_funcs2)
                 # for param,topics,probabilities,topic_model in tqdm(multi_traind_models):
                 #     if args.verbose:
                 #         print("calculating evaluation scores for {}".format(param))
@@ -267,7 +252,7 @@ if __name__ == "__main__":
                 #     updated_param = pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score)
                 #     results.append(updated_param)
                 #     res_df = pd.DataFrame(results)
-                #     res_df.to_csv(result_path)
+                #     #res_df.to_csv(result_path)
         else:
             for idx,params in enumerate(tqdm(train_args_space)):
                 args.__dict__.update(params)
@@ -282,10 +267,10 @@ if __name__ == "__main__":
                 ## write out every 5 steps 
                 if idx%5 == 0:
                     res_df = pd.DataFrame(results)
-                    res_df.to_csv(result_path)
+                    #res_df.to_csv(result_path)
 
         res_df = pd.DataFrame(results)
-        res_df.to_csv(result_path)
+        #res_df.to_csv(result_path)
     else:
         print(args)
         #for i in tqdm(range(1)):
@@ -301,3 +286,5 @@ if __name__ == "__main__":
  # - count vectorvizer, remove integer numbers see topic_model.vectorizer_model.get_feature_names(); many doesn't make sense
  # - more topic evaluation on coherence and diversity https://github.com/MaartenGr/BERTopic/issues/594
  #  --- https://github.com/MIND-Lab/OCTIS
+
+# %%

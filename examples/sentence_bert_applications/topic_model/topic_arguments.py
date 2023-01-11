@@ -15,10 +15,14 @@ def topic_model_args(args_list=None):
                         default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_Small'),type=str) 
     parser.add_argument('--out_folder', action='store', dest='out_folder',
                         default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model'),type=str)
+    parser.add_argument('--result_path', action='store', dest='result_path',
+                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model/hp_tune_results.csv'),type=str)
     parser.add_argument('--cache_dir', action='store', dest='cache_dir',
                         default=os.path.join(config.data_folder,'cache'),type=str) 
     parser.add_argument('--param_out_path', action='store', dest='out_folder',
-                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model/param_results_1.csv'),type=str)                       
+                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model/param_results_1.csv'),type=str) 
+    parser.add_argument('--hyper_param_space_path', action='store', dest='hyper_param_space_path',
+                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model/hyper_param_space.jsonl'),type=str)                                  
     parser.add_argument('--n_neighbors', action='store', dest='n_neighbors',
                             default=15,type=int) 
     parser.add_argument('--n_components', action='store', dest='n_components',

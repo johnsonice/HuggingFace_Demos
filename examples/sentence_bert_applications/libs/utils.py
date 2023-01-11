@@ -2,6 +2,18 @@ import json
 import itertools
 import pandas as pd
 import pathlib,os
+import pickle
+
+
+def to_pickle(f_p,content):
+    with open(f_p, 'wb') as handle:
+        pickle.dump(content, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    return f_p
+
+def load_pickle(f_p):
+    with open(f_p, 'rb') as handle:
+        content = pickle.load(handle)
+    return content
 
 def list2txt(contents,f_p):
     with open(f_p,'w',encoding='utf8') as fp:

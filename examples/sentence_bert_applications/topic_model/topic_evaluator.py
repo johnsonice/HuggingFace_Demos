@@ -28,20 +28,22 @@ def prepare_docs_for_coherence_eval(docs,topics,probabilities,model):
 
     return topic_words,tokens,corpus,dictionary
 
-def get_coherence_score(topic_words,tokens,corpus,dictionary):
+def get_coherence_score(topic_words,tokens,corpus,dictionary,n_workers=-1):
     # Evaluate
+    # print("n_workers: {}".format(n_workers))
     coherence_model = CoherenceModel(topics=topic_words, 
                                     texts=tokens, 
                                     corpus=corpus,
                                     dictionary=dictionary, 
-                                    coherence='c_v')
+                                    coherence='c_v',
+                                    processes=n_workers)
     coherence = coherence_model.get_coherence()
     
     return coherence
 
-def eval_coherence_score(docs,topics,probabilities,model):
+def eval_coherence_score(docs,topics,probabilities,model,n_workers=-1):
     topic_words,tokens,corpus,dictionary = prepare_docs_for_coherence_eval(docs,topics,probabilities,model)
-    coherence = get_coherence_score(topic_words,tokens,corpus,dictionary)
+    coherence = get_coherence_score(topic_words,tokens,corpus,dictionary,n_workers=n_workers)
     
     return coherence
     
