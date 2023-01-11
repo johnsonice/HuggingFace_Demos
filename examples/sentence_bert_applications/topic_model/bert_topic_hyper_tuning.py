@@ -127,7 +127,7 @@ def train_and_eval(args,docs,embeddings,n_workers=1):
     try:
         topics,probabilities,topic_model = train_topic_model(args,docs,embeddings)
     except Exception as e:
-        print('--Topic Model training error -- \n{}'.format(e))
+        print('--Topic Model training error -- : {}'.format(e))
         topics,probabilities,topic_model = (None,None,None)
     
     if topic_model is not None:
@@ -233,15 +233,14 @@ if __name__ == "__main__":
         if args.n_worker>1:
             args_copy = copy.deepcopy(args)
             number_of_cpu = args.n_worker #joblib.cpu_count() - 2 
-            parallel_pool = Parallel(n_jobs=number_of_cpu,verbose=5, backend='loky')
-
-            batched_train_args_space = list(chunks(train_args_space,args.chunk_size))
-            for args_space in tqdm(batched_train_args_space):
-                delayed_funcs = [delayed(get_param_results)(p,args_copy,docs,embeddings) for p in args_space]
-                multi_res = parallel_pool(delayed_funcs)
-                results.extend(multi_res)
-                res_df = pd.DataFrame(results)
-                res_df.to_csv(result_path)
+            with Parallel(n_jobs=number_of_cpu,verbose=5, backend='loky') as parallel_pool:
+                batched_train_args_space = list(chunks(train_args_space,args.chunk_size))
+                for args_space in tqdm(batched_train_args_space):
+                    delayed_funcs = [delayed(get_param_results)(p,args_copy,docs,embeddings) for p in args_space]
+                    multi_res = parallel_pool(delayed_funcs)
+                    results.extend(multi_res)
+                    res_df = pd.DataFrame(results)
+                    res_df.to_csv(result_path)
                 
                 ###################################
                 ## old step by step multi process##
