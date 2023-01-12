@@ -4,6 +4,17 @@ import pandas as pd
 import pathlib,os
 import pickle
 
+def rename_if_exist(f_p):
+    i = 0 
+    folder_path = os.path.dirname(f_p)
+    base = os.path.basename(f_p)
+    while True:
+        name = base if i == 0 else "_{}".format(i).join(os.path.splitext(base))
+        dst_path = os.path.join(folder_path,name)
+        if not os.path.exists(dst_path):
+            return dst_path
+        else:
+            i +=1
 
 def to_pickle(f_p,content):
     with open(f_p, 'wb') as handle:

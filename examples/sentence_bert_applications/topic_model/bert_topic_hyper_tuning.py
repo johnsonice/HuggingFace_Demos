@@ -4,7 +4,6 @@ import os, sys,ssl,argparse
 sys.path.insert(0,'../libs')
 sys.path.insert(0,'..')
 import config
-from utils import get_all_files,txt2list
 from tqdm import tqdm
 import numpy as np
 ## in case you are behind a proxy 
@@ -14,7 +13,7 @@ getattr(ssl, '_create_unverified_context', None)):
 import joblib
 from joblib import Parallel, delayed
 import copy, time
-from utils import chunks
+from utils import chunks,rename_if_exist,get_all_files,txt2list
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -31,7 +30,8 @@ from hdbscan import HDBSCAN
 from topic_evaluator import eval_coherence_score, eval_diversity_score
 
 ## import arguments 
-from topic_arguments import topic_model_args, train_args_space, topic_rep_args_space
+from topic_arguments import topic_model_args
+from topic_hyper_params import load_hyper_params,get_params_diff
 
 
 #%%
@@ -166,26 +166,6 @@ def get_param_results(param,args,docs,embeddings):
     res = pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score)
     return res
 
-# def multi_process_func(param,args,docs,embeddings):
-#     """put all eval metric in one func for multi process"""
-#     if param:
-#         args.__dict__.update(param)
-#     try:
-#         topics,probabilities,topic_model=train_topic_model(args,docs,embeddings)
-#     except Exception as e:
-#         print('-- Error -- \n{}\n{}'.format(param,e))
-#         return (param,None,None,None)
-#     return(param,topics,probabilities,topic_model)
-
-# def multi_process_eval_func(multi_model_returns):
-#     param,topics,probabilities,topic_model = multi_model_returns
-#     if topic_model is None:
-#         coherence_scores,outlier_percent,n_topics,diversity_score= (None,None,None,None)
-#     else:
-#         coherence_scores,outlier_percent,n_topics,diversity_score= eval_topic_model(docs,topics,probabilities,topic_model)
-#     updated_param = pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score)
-#     return updated_param
-
 #%%
 if __name__ == "__main__":
     startTime = time.time()
@@ -197,7 +177,12 @@ if __name__ == "__main__":
     out_folder = args.out_folder
     emb_path = os.path.join(out_folder,'sentence_embeddings.npy')
     docs_path = os.path.join(out_folder,'docs.npy')
-    result_path = args.result_path
+    train_args_space = get_params_diff(args.hyper_param_space_path,args.result_path)
+    if args.test_run:  ## test trying loop with small params 
+        train_args_space = train_args_space[:40]
+    result_path = rename_if_exist(args.result_path)
+    if args.verbose:
+        print("Results will be saved at {}".format(result_path))
 
     ## set up topics models 
     if not args.LOAD_EMB:
@@ -221,12 +206,10 @@ if __name__ == "__main__":
         print('Number of docs: {}'.format(len(docs)))
 
     ## for testing purpose, try a small sample size 
-    embeddings = embeddings[:50000]
-    docs = docs[:50000]
+    embeddings = embeddings[:300000]
+    docs = docs[:300000]
     #%%
-    ## test trying loop with small params 
-    if args.test_run:
-        train_args_space = train_args_space[:40]
+
 
     results = []
     if args.TUNE:
@@ -240,33 +223,7 @@ if __name__ == "__main__":
                     multi_res = parallel_pool(delayed_funcs)
                     results.extend(multi_res)
                     res_df = pd.DataFrame(results)
-                    res_df.to_csv(result_path)
-                
-                ###################################
-                ## old step by step multi process##
-                ################################### 
-
-                # delayed_funcs = [delayed(multi_process_func)(p,args_copy,docs,embeddings) for p in args_space]
-                # multi_traind_models = parallel_pool(delayed_funcs)
-                # ## for some reason i can 't paralleize evaluation calculation 
-                # # delayed_funcs2 = [delayed(multi_process_func)(m) for m in multi_traind_models]
-                # # results = parallel_pool(delayed_funcs2)
-                # for param,topics,probabilities,topic_model in tqdm(multi_traind_models):
-                #     if args.verbose:
-                #         print("calculating evaluation scores for {}".format(param))
-                #     if topic_model is not None:
-                #         try:
-                #             coherence_scores,outlier_percent,n_topics,diversity_score= eval_topic_model(docs,topics,
-                #                                                                                         probabilities,topic_model)
-                #         except:
-                #             coherence_scores,outlier_percent,n_topics,diversity_score = (None,None,None,None)
-                #     else: 
-                #         coherence_scores,outlier_percent,n_topics,diversity_score = (None,None,None,None)
-
-                #     updated_param = pack_update_param(param,coherence_scores,outlier_percent,n_topics,diversity_score)
-                #     results.append(updated_param)
-                #     res_df = pd.DataFrame(results)
-                #     res_df.to_csv(result_path)
+                    res_df.to_csv(result_path)  ## export every chunk 
         else:
             for idx,params in enumerate(tqdm(train_args_space)):
                 args.__dict__.update(params)

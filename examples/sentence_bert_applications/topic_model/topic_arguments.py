@@ -19,8 +19,6 @@ def topic_model_args(args_list=None):
                         default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model/hp_tune_results.csv'),type=str)
     parser.add_argument('--cache_dir', action='store', dest='cache_dir',
                         default=os.path.join(config.data_folder,'cache'),type=str) 
-    parser.add_argument('--param_out_path', action='store', dest='out_folder',
-                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model/param_results_1.csv'),type=str) 
     parser.add_argument('--hyper_param_space_path', action='store', dest='hyper_param_space_path',
                         default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model/hyper_param_space.jsonl'),type=str)                                  
     parser.add_argument('--n_neighbors', action='store', dest='n_neighbors',
@@ -56,12 +54,12 @@ def topic_model_args(args_list=None):
     return args
 
 train_args = {
-            'n_neighbors':[5,10,15,20,30],
-            'n_components':[3,5,8],
-            'min_cluster_size':[20,40,60],
+            'n_neighbors':[5,10,15,20,25,30],
+            'n_components':[3,5,8,10],
+            'min_cluster_size':[20,40,60,80],
             'min_samples': [1.0,0.8,0.6,0.4,0.2],
             'metric':['euclidean'],
-            'top_n_words':[5,10,20],
+            'top_n_words':[5,10,20,30],
             #'top_n_words':[5,10,15,20,30],
             #'diversity' : [0.1,0.3,0.5,0.7,0.9]
             }
