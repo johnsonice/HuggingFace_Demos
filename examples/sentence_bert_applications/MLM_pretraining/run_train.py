@@ -56,8 +56,8 @@ if __name__ == "__main__":
     args = parser.parse_args_into_dataclasses()[0]
     model, tokenizer = get_model(args)
     dataset = get_data(args)
-    #data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
-    data_collator = partial(whole_word_masking_data_collator,tokenizer=tokenizer)
+    data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
+    #data_collator = partial(whole_word_masking_data_collator,tokenizer=tokenizer)
     optimizer = get_optimizer(model,args)
 
     ## start training
