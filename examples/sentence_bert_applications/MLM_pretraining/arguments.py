@@ -22,7 +22,7 @@ def vocab_aug_args():
     parser.add_argument('--data_folder', action='store', dest='data_folder',
                         default=config.data_folder,type=str) 
     parser.add_argument('--input_files_folder', action='store', dest='input_files_folder',
-                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN'),type=str) 
+                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_All'),type=str) 
     parser.add_argument('--model_folder', action='store', dest='model_folder',
                         default=os.path.join(config.data_folder,'Models'),type=str)
     parser.add_argument('--cache_dir', action='store', dest='cache_dir',
@@ -30,28 +30,33 @@ def vocab_aug_args():
     args = parser.parse_args()    
     return args
 
-def tokenize_args():
+def tokenize_args(args_list=None):
     parser = argparse.ArgumentParser()
+    # parser.add_argument('-m', '--model_checkpoint', action='store', dest='model_checkpoint',
+    #                     default=os.path.join(config.data_folder,'Models',config.default_model_checkpoint),type=str)
     parser.add_argument('-m', '--model_checkpoint', action='store', dest='model_checkpoint',
-                        default=os.path.join(config.data_folder,'Models',config.default_model_checkpoint),type=str)
+                    default=config.default_model_checkpoint,type=str)
     parser.add_argument('--data_folder', action='store', dest='data_folder',
                         default=config.data_folder,type=str) 
     parser.add_argument('--input_files_folder', action='store', dest='input_files_folder',
-                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_Large'),type=str) 
+                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_All'),type=str) 
     parser.add_argument('--model_folder', action='store', dest='model_folder',
                         default=os.path.join(config.data_folder,'Models'),type=str)
     parser.add_argument('--ds_out_folder', 
                         action='store', 
                         dest='ds_out_folder',
                         default=os.path.join(config.data_folder,
-                                 'Data/sentence_bert/mlm_pre_training_processed_{}_Large'.format(config.default_model_checkpoint)),
+                                 'Data/sentence_bert/mlm_pre_training_processed_{}_All'.format(config.default_model_checkpoint)),
                                 type=str)
     parser.add_argument('--cache_dir', action='store', dest='cache_dir',
                         default=os.path.join(config.data_folder,'cache'),type=str) 
     parser.add_argument('--vocab_aug', dest='vocab_aug',action='store_true')
     parser.add_argument('--no_vocab_aug', dest='vocab_aug',action='store_false')
     parser.set_defaults(vocab_aug=True)
-    args = parser.parse_args() 
+    if args_list is not None:
+        args = parser.parse_args(args_list) 
+    else:
+        args = parser.parse_args()  
     return args
 
 
@@ -63,7 +68,7 @@ class ModelTrainingArguments(TrainingArguments):
     ## global pathes 
     model_name_or_path: str = os.path.join(config.data_folder,'Models',config.default_model_checkpoint)
     data: str = os.path.join(config.data_folder,
-                             'Data/sentence_bert/mlm_pre_training_processed_{}_Small'.format(config.default_model_checkpoint))
+                             'Data/sentence_bert/mlm_pre_training_processed_{}_All'.format(config.default_model_checkpoint))
     output_dir: str = os.path.join(config.data_folder,'Models',config.default_model_checkpoint + '_adapted_Small')
     additional_vocab_path: str = os.path.join(config.data_folder,'Models','imf_vocab_aug_500.txt')
     

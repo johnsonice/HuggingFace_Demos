@@ -23,7 +23,7 @@ model_folder = os.path.join(data_folder,'Models')
 
 
 ## default model params   
-default_model_checkpoint = 'all-distillroberta-v1'#'roberta-base'
+default_model_checkpoint = 'sentence-transformers/all-distilroberta-v1' #'all-distillroberta-v1'#'roberta-base'
 
 
 ## other params 

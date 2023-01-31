@@ -107,8 +107,8 @@ if __name__ == "__main__":
     ## overall global variables 
     #data_folder = os.path.join(config.data_folder,'Data','Raw_LM_Data','RAW')
     data_folder = os.path.join('/data/chuang/Language_Model_Training_Data/Data/Raw_LM_Data')
-    input_folder = os.path.join(data_folder,'RAW_Large')
-    out_folder = os.path.join(data_folder,'CLEAN_Large')
+    input_folder = os.path.join(data_folder,'RAW_All')
+    out_folder = os.path.join(data_folder,'CLEAN_All')
     keep_tags = ['<Para>','<Title>','<Footnote>']
     input_files = get_all_files(input_folder,'.txt')
     #%%

@@ -4,9 +4,12 @@
 """
 ## txt data to tokens for MLM models 
 """
-import os, sys 
+import os, sys , ssl
 sys.path.insert(0,'../libs')
 sys.path.insert(0,'..')
+if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
+    ssl._create_default_https_context = ssl._create_unverified_context
+
 #from hf_utils import train_val_test_split
 #import wandb
 #from transformers import AutoModelForMaskedLM
@@ -72,19 +75,20 @@ def whole_word_masking_data_collator(features,wwm_probability=0.2):
                 input_ids[idx] = tokenizer.mask_token_id   ## masked tokens will be replaced with mask token id
     
     return default_data_collator(features)
-
+#%%
 if __name__ == "__main__":
     
-    N_cpu = 8 #cpu_count() - 8
+    N_cpu = 32 #cpu_count() - 8
     args = tokenize_args()
     print(args)
     
-    MODEL = args.model_checkpoint
+    MODEL = args.model_checkpoint #sentence-transformers/all-distilroberta-v1
     DA_CACHE = args.cache_dir
     DA_OUTDIR= args.ds_out_folder #os.path.join(config.data_folder,'Data/sentence_bert/mlm_pre_training_processed_{}'.format(MODEL))
     #data_path= os.path.join(config.data_folder,'Data/sentence_bert/pre_training_raw_data','IMF_Documents_2018.txt')
     IN_DA_FOLDER = args.input_files_folder
     data_files = get_all_files(IN_DA_FOLDER,'.txt')
+    assert len(data_files)>0 ## make sure we have data there 
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL)
     if args.vocab_aug:
@@ -95,7 +99,7 @@ if __name__ == "__main__":
         tokenizer.add_tokens(new_tokens)
         #model.resize_token_embeddings(len(tokenizer))
         print('new vocab size: {}'.format(len(tokenizer)))
-        
+    #%%
     ##process data into datastes 
     try:
         raw_dataset = load_dataset('text', data_files=data_files,cache_dir=DA_CACHE) ## default split is 'train'
@@ -119,3 +123,5 @@ if __name__ == "__main__":
     lm_datasets.save_to_disk(DA_OUTDIR)
     print(lm_datasets)
 
+
+# %%
