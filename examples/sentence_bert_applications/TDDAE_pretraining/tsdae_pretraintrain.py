@@ -11,11 +11,18 @@ documentation:
 Some examples 
     https://www.pinecone.io/learn/unsupervised-training-sentence-transformers/
 
+Possiblly use triplet evaluation data for evaluator:
+    https://github.com/UKPLab/sentence-transformers/issues/1780
+    https://github.com/UKPLab/sentence-transformers/issues/336
+    https://github.com/UKPLab/sentence-transformers/issues/1389
+
+
 """
 #%%
 import os , ssl, argparse,sys
 sys.path.insert(0,'../libs')
 sys.path.insert(0,'..')
+#sys.path.insert(0,'.')
 if (not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None)):
     ssl._create_default_https_context = ssl._create_unverified_context
 from datasets import load_dataset
@@ -26,6 +33,7 @@ from torch.utils.data import DataLoader
 import config
 from utils import get_all_files
 from eval import process_sts
+from tsdae_evaluators import triplet_evaluator
 import logging
 
 logging.basicConfig(format='%(asctime)s - %(message)s',
@@ -44,6 +52,8 @@ def train_args(args_list=None):
                         default=config.data_folder,type=str) 
     parser.add_argument('--input_files_folder', action='store', dest='input_files_folder',
                         default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_All'),type=str) 
+    parser.add_argument('--eval_file', action='store', dest='eval_file',
+                        default=os.path.join(config.data_folder,'Data/Triplet_Data/triplet_hard_neg_data.xlsx'),type=str) 
     parser.add_argument('--model_folder', action='store', dest='model_folder',
                         default=os.path.join(config.data_folder,'Models'),type=str)
     parser.add_argument('--model_outdir', 
@@ -67,7 +77,7 @@ def train_args(args_list=None):
 
 if __name__ == "__main__":
     
-    args = train_args()
+    args = train_args([])
 
     MODEL = args.model_checkpoint #sentence-transformers/all-distilroberta-v1
     CACHE = args.cache_dir
@@ -86,7 +96,7 @@ if __name__ == "__main__":
     
     #%%
     # Define a list with sentences (1k - 100k sentences)
-    train_sentences=raw_dataset['train']['text'][:5000]
+    train_sentences=raw_dataset['train']['text']#[:50000]
     # Create the special denoising dataset that adds noise on-the-fly ; can not pass in customized tokenizer
     train_dataset = datasets.DenoisingAutoEncoderDataset(train_sentences)
     # DataLoader to batch your data
@@ -95,17 +105,19 @@ if __name__ == "__main__":
     train_loss = losses.DenoisingAutoEncoderLoss(model, decoder_name_or_path=MODEL, tie_encoder_decoder=True)
     #%%
 
-    ## get data and setup evaluator 
-    sts_samples = process_sts()
-    sts_evaluator = EmbeddingSimilarityEvaluator.from_input_examples(
-        sts_samples, write_csv=False
-    )
+    # ## get data and setup evaluator 
+    # sts_samples = process_sts()
+    # sts_evaluator = EmbeddingSimilarityEvaluator.from_input_examples(
+    #     sts_samples, write_csv=False
+    # )
+    funddoc_evaluator = triplet_evaluator(args.eval_file,n_sample=5000,hard=True)
+    #%%
 
     # Call the fit method
     model.fit(
         train_objectives=[(train_dataloader, train_loss)],
-        evaluator=sts_evaluator,
-        evaluation_steps=1000,
+        evaluator=funddoc_evaluator,
+        evaluation_steps=5000,
         epochs=1,
         weight_decay=0,
         scheduler='warmuplinear',#'constantlr',
