@@ -20,7 +20,7 @@ logging.basicConfig(format='%(asctime)s - %(message)s',
                     handlers=[LoggingHandler()])
 #%%
 
-def triplet_evaluator(input_file,n_sample=None,hard=False,batch_size=32):
+def triplet_evaluator(input_file,n_sample=None,hard=False,batch_size=32,write_csv=False):
     df = pd.read_excel(input_file)
     if n_sample:
         if len(df) > n_sample:
@@ -35,7 +35,7 @@ def triplet_evaluator(input_file,n_sample=None,hard=False,batch_size=32):
 
     val_evaluator= TripletEvaluator(val_anchor, val_positives, val_negatives,
                                     main_distance_function=0,show_progress_bar=True,
-                                    write_csv=False,batch_size=batch_size)
+                                    write_csv=write_csv,batch_size=batch_size)
 
     return val_evaluator
 
