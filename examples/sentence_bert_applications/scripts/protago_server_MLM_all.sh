@@ -5,7 +5,9 @@ python run_train.py --data="/home/shared_data/Language_Model_Training_Data/Data/
 --model_name_or_path="sentence-transformers/all-distilroberta-v1" \
 --per_device_train_batch_size=32 \
 --do_train \
+--do_eval \
 --learning_rate=1e-4 \
 --num_train_epochs=3 \
 --save_step=5000 \
+--eval_steps=5000 \
 
