@@ -35,11 +35,19 @@ from utils import get_all_files
 from eval import process_sts
 from tsdae_evaluators import triplet_evaluator
 import logging
+import wandb
+#wandb.login()
 
+#%%
 logging.basicConfig(format='%(asctime)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO,
                     handlers=[LoggingHandler()])
+
+
+def callback_wb(score,epoch,steps):
+    wandb.log({'acc':score,'epoch':epoch,'steps':steps})
+    return None
 
 
 def train_args(args_list=None):
@@ -60,7 +68,13 @@ def train_args(args_list=None):
                         action='store', 
                         dest='MODEL_OUTDIR',
                         default=os.path.join(config.data_folder,
-                                 'Models/tsdae_pre_training_processed_{}_All'.format(config.default_model_checkpoint)),
+                                 'Models/tsdae_pre_training_{}_All'.format(config.default_model_checkpoint)),
+                                type=str)
+    parser.add_argument('--checkpoint_folder', 
+                        action='store', 
+                        dest='checkpoint_folder',
+                        default=os.path.join(config.data_folder,
+                                 'Models/tsdae_pre_training_{}_checkpoints'.format(config.default_model_checkpoint)),
                                 type=str)
     parser.add_argument('--cache_dir', action='store', dest='cache_dir',
                         default=os.path.join(config.data_folder,'cache'),type=str) 
@@ -83,6 +97,7 @@ if __name__ == "__main__":
     CACHE = args.cache_dir
     MODEL_OUTDIR= args.MODEL_OUTDIR 
     IN_DA_FOLDER = args.input_files_folder
+    EVAL_RES = os.path.join(MODEL_OUTDIR,'tsdae_res.csv')
     data_files = get_all_files(IN_DA_FOLDER,'.txt')
     assert len(data_files)>0 ## make sure we have data there 
     raw_dataset = load_dataset('text', data_files=data_files,cache_dir=CACHE)
@@ -110,24 +125,38 @@ if __name__ == "__main__":
     # sts_evaluator = EmbeddingSimilarityEvaluator.from_input_examples(
     #     sts_samples, write_csv=False
     # )
-    funddoc_evaluator = triplet_evaluator(args.eval_file,n_sample=5000,hard=True)
+
     #%%
+    funddoc_evaluator = triplet_evaluator(args.eval_file,n_sample=False,hard=True,write_csv=MODEL_OUTDIR)
+    logging.info("Dev performance before training: {}".format(funddoc_evaluator(model)))
+    #%%
+    #%% 
+    wandb.init(
+        project="sentenct-bert-training",
+        name='tsdae-training',
+        config={
+            'learning_rate':1e-5,
+            'epoch':1
+        }
+    )
+
 
     # Call the fit method
     model.fit(
         train_objectives=[(train_dataloader, train_loss)],
         evaluator=funddoc_evaluator,
-        evaluation_steps=5000,
+        evaluation_steps=2000,
         epochs=1,
-        weight_decay=0,
+        weight_decay=0.01,
         scheduler='warmuplinear',#'constantlr',
-        optimizer_params={'lr': 2e-5}, #3e-5
-        #output_path = MODEL_OUTDIR,
-        checkpoint_path = MODEL_OUTDIR,
-        checkpoint_save_steps = 5000,
-        checkpoint_save_total_limit = 5,
-        show_progress_bar=True
+        optimizer_params={'lr': 1e-5}, #3e-5
+        output_path = MODEL_OUTDIR,
+        checkpoint_path = args.checkpoint_folder,
+        checkpoint_save_steps = 50000,
+        checkpoint_save_total_limit = 10,
+        show_progress_bar=True,
+        callback=callback_wb
     )
     
-    model.save(MODEL_OUTDIR)
-# %%
+    #model.save(MODEL_OUTDIR)
+    # %%

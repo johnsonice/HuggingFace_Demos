@@ -25,7 +25,7 @@ def train(tokenizer, data_collator, tokenized_datasets, model, optimizer, args):
 
     # set up schedule if needed
     # linear warmup
-    num_trianing_steps = args.num_train_epochs * int(len(tokenized_datasets['train'])/args.n_gpu/args.per_device_train_batch_size)
+    #num_trianing_steps = args.num_train_epochs * int(len(tokenized_datasets['train'])/args.n_gpu/args.per_device_train_batch_size)
     if args.total_steps > 0:
         schedule_total = args.total_steps
     else:
