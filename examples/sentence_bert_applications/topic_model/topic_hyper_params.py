@@ -33,19 +33,21 @@ def get_params_diff(p_space_fp,tune_res_fp=None):
 if __name__=="__main__":
     topic_args = topic_model_args(['--hyper_param_space_path',
                                 os.path.join(config.data_folder,
-                                            'Data/Raw_LM_Data/temp_topic_model/hyper_param_space.jsonl'
+                                            'Models/Topic_Models/hyper_param_space.jsonl'
                                             )
                                     ]
                                 )
     
     train_args = {
-                'n_neighbors':[5,10,15,20,25,30],
-                'n_components':[3,5,8,10],
+                'n_neighbors':[5,10,15,20,25],
+                'n_components':[3,5,8],
                 'min_cluster_size':[20,40],
                 'min_samples': [1.0,0.8,0.6,0.4,0.2],
                 'metric':['euclidean'],
                 'top_n_words':[5,10,20,30],
+                #'n_neighbors':[5,10,15,20,25,30]
                 #'min_cluster_size':[20,40,60,80],
+                #'n_components':[3,5,8,10],
                 #'top_n_words':[5,10,15,20,30],
                 #'diversity' : [0.1,0.3,0.5,0.7,0.9]
                 }

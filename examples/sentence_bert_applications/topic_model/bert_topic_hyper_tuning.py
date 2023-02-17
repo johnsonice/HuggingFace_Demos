@@ -189,12 +189,12 @@ def get_param_results(param,args,docs,embeddings):
 if __name__ == "__main__":
     startTime = time.time()
 
-    args = topic_model_args(['--model_checkpoint',
-                             '/data/chuang/Language_Model_Training_Data/Models/Saved_SBERT/10000',
-                             '--out_folder','/data/chuang/Language_Model_Training_Data/Models/Topic_Models/step_10000',
-                             '--result_path','/data/chuang/Language_Model_Training_Data/Models/Topic_Models/baeline/hp_tune_results.csv'
-                             ])
-    # args = topic_model_args()
+    # args = topic_model_args(['--model_checkpoint',
+    #                          '/data/chuang/Language_Model_Training_Data/Models/Saved_SBERT/10000',
+    #                          '--out_folder','/data/chuang/Language_Model_Training_Data/Models/Topic_Models/step_10000',
+    #                          '--result_path','/data/chuang/Language_Model_Training_Data/Models/Topic_Models/baeline/hp_tune_results.csv'
+    #                          ])
+    args = topic_model_args()
     #%%
     ## set paths 
     model_name = args.model_checkpoint
