@@ -145,15 +145,15 @@ if __name__ == "__main__":
     model.fit(
         train_objectives=[(train_dataloader, train_loss)],
         evaluator=funddoc_evaluator,
-        evaluation_steps=2000,
+        evaluation_steps=1000,
         epochs=1,
         weight_decay=0.01,
         scheduler='warmuplinear',#'constantlr',
         optimizer_params={'lr': 1e-5}, #3e-5
         output_path = MODEL_OUTDIR,
         checkpoint_path = args.checkpoint_folder,
-        checkpoint_save_steps = 50000,
-        checkpoint_save_total_limit = 10,
+        checkpoint_save_steps = 2000,
+        checkpoint_save_total_limit = 20,
         show_progress_bar=True,
         callback=callback_wb
     )

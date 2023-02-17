@@ -14,26 +14,8 @@ import config
 from transformers import TrainingArguments
 from dataclasses import dataclass, field
 
-
-def vocab_aug_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--model_checkpoint', action='store', dest='model_checkpoint',
-                        default=config.default_model_checkpoint,type=str)
-    parser.add_argument('--data_folder', action='store', dest='data_folder',
-                        default=config.data_folder,type=str) 
-    parser.add_argument('--input_files_folder', action='store', dest='input_files_folder',
-                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_All'),type=str) 
-    parser.add_argument('--model_folder', action='store', dest='model_folder',
-                        default=os.path.join(config.data_folder,'Models'),type=str)
-    parser.add_argument('--cache_dir', action='store', dest='cache_dir',
-                        default=os.path.join(config.data_folder,'cache'),type=str) 
-    args = parser.parse_args()    
-    return args
-
 def tokenize_args(args_list=None):
     parser = argparse.ArgumentParser()
-    # parser.add_argument('-m', '--model_checkpoint', action='store', dest='model_checkpoint',
-    #                     default=os.path.join(config.data_folder,'Models',config.default_model_checkpoint),type=str)
     parser.add_argument('-m', '--model_checkpoint', action='store', dest='model_checkpoint',
                     default=config.default_model_checkpoint,type=str)
     parser.add_argument('--data_folder', action='store', dest='data_folder',
@@ -46,7 +28,7 @@ def tokenize_args(args_list=None):
                         action='store', 
                         dest='ds_out_folder',
                         default=os.path.join(config.data_folder,
-                                 'Data/sentence_bert/mlm_pre_training_processed_{}_All'.format(config.default_model_checkpoint)),
+                                 'Data/CasualLM/casualLM_pre_training_processed_{}_All'.format(config.default_model_checkpoint)),
                                 type=str)
     parser.add_argument('--n_workers', action='store', dest='n_workers',
                         default=32,type=int) 

@@ -35,21 +35,40 @@ from topic_hyper_params import load_hyper_params,get_params_diff
 
 
 #%%
-def read_txt(f_p):
+def read_txt(f_p,min_len=20):
     txt_l = txt2list(f_p)
-    txt_l = [t for t in txt_l if len(t.split())>5]
+    txt_l = [t for t in txt_l if len(t.split())>min_len]
     return txt_l
 
+def data_clean_for_topic(input_text:str,min_len:int):
+    """
+    simple data cleaning and filtering for topic model training
+    """
+    if isinstance(input_text):
+        pass
+    else:
+        return ""
 
-def read_all_data(raw_txt_folder):
+    input_text= input_text.replace('<Title>','')
+    if len(input_text.split())>min_len:
+        return input_text
+    else:
+        return ""
+    
+def read_all_data(raw_txt_folder,min_len=20,data_clean_func=None):
     out_list = []
     input_files = get_all_files(raw_txt_folder,'.txt')
     for inf in tqdm(input_files):
-        txt_l = read_txt(inf)
+        txt_l = read_txt(inf,min_len)
         if len(txt_l)>1:
-            out_list.extend(txt_l)
-    return out_list
+            if data_clean_func:
+                txt_l = data_clean_for_topic(txt_l,min_len)
+                if len(txt_l)>1:
+                    out_list.extend(txt_l)
+            else:
+                out_list.extend(txt_l)
 
+    return out_list
 
 def model_setup(train_args):
     '''
@@ -170,8 +189,15 @@ def get_param_results(param,args,docs,embeddings):
 if __name__ == "__main__":
     startTime = time.time()
 
-    args = topic_model_args()
+    args = topic_model_args(['--model_checkpoint',
+                             '/data/chuang/Language_Model_Training_Data/Models/Saved_SBERT/10000',
+                             '--out_folder','/data/chuang/Language_Model_Training_Data/Models/Topic_Models/step_10000',
+                             '--result_path','/data/chuang/Language_Model_Training_Data/Models/Topic_Models/baeline/hp_tune_results.csv'
+                             ])
+    # args = topic_model_args()
+    #%%
     ## set paths 
+    model_name = args.model_checkpoint
     data_folder = args.data_folder
     input_folder = args.input_files_folder
     out_folder = args.out_folder
@@ -189,7 +215,7 @@ if __name__ == "__main__":
         ## read raw documents 
         docs = read_all_data(input_folder)
         ## load model 
-        sentence_model = SentenceTransformer("all-distilroberta-v1")                
+        sentence_model = SentenceTransformer(model_name)                
         ## encode sentences 
         embeddings = sentence_model.encode(docs, show_progress_bar=True)
         assert len(docs)==len(embeddings)
@@ -205,12 +231,11 @@ if __name__ == "__main__":
         assert len(docs)==len(embeddings)
         print('Number of docs: {}'.format(len(docs)))
 
-    ## for testing purpose, try a small sample size 
-    embeddings = embeddings[:300000]
-    docs = docs[:300000]
     #%%
-
-
+    ## for testing purpose, try a small sample size 
+    # embeddings = embeddings[:300000]
+    # docs = docs[:300000]
+    #%%
     results = []
     if args.TUNE:
         if args.n_worker>1:
@@ -245,8 +270,9 @@ if __name__ == "__main__":
     else:
         print(args)
         #for i in tqdm(range(1)):
-        res = get_param_results(None,args,docs,embeddings)
-        print(res)
+        topics,probabilities,topic_model = train_topic_model(args,docs,embeddings)
+        # res = eval_topic_model(docs,topics,probabilities,topic_model,n_workers=1)
+        # print(res)
 
     ## track executionTime
     executionTime = (time.time() - startTime)
@@ -257,3 +283,5 @@ if __name__ == "__main__":
  # - count vectorvizer, remove integer numbers see topic_model.vectorizer_model.get_feature_names(); many doesn't make sense
  # - more topic evaluation on coherence and diversity https://github.com/MaartenGr/BERTopic/issues/594
  #  --- https://github.com/MIND-Lab/OCTIS
+
+# %%

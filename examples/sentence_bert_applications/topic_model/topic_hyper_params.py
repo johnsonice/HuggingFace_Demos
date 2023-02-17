@@ -41,10 +41,11 @@ if __name__=="__main__":
     train_args = {
                 'n_neighbors':[5,10,15,20,25,30],
                 'n_components':[3,5,8,10],
-                'min_cluster_size':[20,40,60,80],
+                'min_cluster_size':[20,40],
                 'min_samples': [1.0,0.8,0.6,0.4,0.2],
                 'metric':['euclidean'],
                 'top_n_words':[5,10,20,30],
+                #'min_cluster_size':[20,40,60,80],
                 #'top_n_words':[5,10,15,20,30],
                 #'diversity' : [0.1,0.3,0.5,0.7,0.9]
                 }

@@ -9,18 +9,20 @@ from utils import hyper_param_permutation
 
 def topic_model_args(args_list=None):
     parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--model_checkpoint', action='store', dest='model_checkpoint',
+                    default='all-distilroberta-v1',type=str)
     parser.add_argument('--data_folder', action='store', dest='data_folder',
                         default=config.data_folder,type=str) 
     parser.add_argument('--input_files_folder', action='store', dest='input_files_folder',
                         default=os.path.join(config.data_folder,'Data/Raw_LM_Data/CLEAN_Small'),type=str) 
     parser.add_argument('--out_folder', action='store', dest='out_folder',
-                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model'),type=str)
+                        default=os.path.join(config.data_folder,'Models/Topic_Models/baeline'),type=str)
     parser.add_argument('--result_path', action='store', dest='result_path',
-                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model/hp_tune_results.csv'),type=str)
+                        default=os.path.join(config.data_folder,'Models/Topic_Models/baeline/hp_tune_results.csv'),type=str)
     parser.add_argument('--cache_dir', action='store', dest='cache_dir',
                         default=os.path.join(config.data_folder,'cache'),type=str) 
     parser.add_argument('--hyper_param_space_path', action='store', dest='hyper_param_space_path',
-                        default=os.path.join(config.data_folder,'Data/Raw_LM_Data/temp_topic_model/hyper_param_space.jsonl'),type=str)                                  
+                        default=os.path.join(config.data_folder,'Models/Topic_Models/hyper_param_space.jsonl'),type=str)                                  
     parser.add_argument('--n_neighbors', action='store', dest='n_neighbors',
                             default=15,type=int) 
     parser.add_argument('--n_components', action='store', dest='n_components',
@@ -53,27 +55,27 @@ def topic_model_args(args_list=None):
         args = parser.parse_args()    
     return args
 
-train_args = {
-            'n_neighbors':[5,10,15,20,25,30],
-            'n_components':[3,5,8,10],
-            'min_cluster_size':[20,40,60,80],
-            'min_samples': [1.0,0.8,0.6,0.4,0.2],
-            'metric':['euclidean'],
-            'top_n_words':[5,10,20,30],
-            #'top_n_words':[5,10,15,20,30],
-            #'diversity' : [0.1,0.3,0.5,0.7,0.9]
-            }
-train_args_space = hyper_param_permutation(train_args)
-for t in train_args_space: ## make sure min_samples is less than min_cluster_size
-    t['min_samples'] = int(t['min_cluster_size'] * t['min_samples'] )
-    ## see https://github.com/MaartenGr/BERTopic/issues/582
-    ## https://htmlpreview.github.io/?https://github.com/drob-xx/TopicTuner/blob/main/doc/topictuner.html#TopicModelTuner.runHDBSCAN
+# train_args = {
+#             'n_neighbors':[5,10,15,20,25,30],
+#             'n_components':[3,5,8,10],
+#             'min_cluster_size':[20,40,60,80],
+#             'min_samples': [1.0,0.8,0.6,0.4,0.2],
+#             'metric':['euclidean'],
+#             'top_n_words':[5,10,20,30],
+#             #'top_n_words':[5,10,15,20,30],
+#             #'diversity' : [0.1,0.3,0.5,0.7,0.9]
+#             }
+# train_args_space = hyper_param_permutation(train_args)
+# for t in train_args_space: ## make sure min_samples is less than min_cluster_size
+#     t['min_samples'] = int(t['min_cluster_size'] * t['min_samples'] )
+#     ## see https://github.com/MaartenGr/BERTopic/issues/582
+#     ## https://htmlpreview.github.io/?https://github.com/drob-xx/TopicTuner/blob/main/doc/topictuner.html#TopicModelTuner.runHDBSCAN
 
-topic_rep_args = {
-    'top_n_words':[5,10,15,20],
-    'diversity' : [0.1,0.3,0.5,0.7,0.9]
-}
-topic_rep_args_space = hyper_param_permutation(topic_rep_args)
+# topic_rep_args = {
+#     'top_n_words':[5,10,15,20],
+#     'diversity' : [0.1,0.3,0.5,0.7,0.9]
+# }
+# topic_rep_args_space = hyper_param_permutation(topic_rep_args)
 
 #%%
 if __name__ == "__main__":
