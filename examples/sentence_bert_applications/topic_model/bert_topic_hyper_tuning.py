@@ -233,8 +233,8 @@ if __name__ == "__main__":
 
     #%%
     ## for testing purpose, try a small sample size 
-    # embeddings = embeddings[:300000]
-    # docs = docs[:300000]
+    # embeddings = embeddings[:100000]
+    # docs = docs[:100000]
     #%%
     results = []
     if args.TUNE:
@@ -271,8 +271,12 @@ if __name__ == "__main__":
         print(args)
         #for i in tqdm(range(1)):
         topics,probabilities,topic_model = train_topic_model(args,docs,embeddings)
-        # res = eval_topic_model(docs,topics,probabilities,topic_model,n_workers=1)
-        # print(res)
+        topic_model_out_path = os.path.join(args.out_folder,'topic_model')
+        topic_model.save(topic_model_out_path, save_embedding_model=False)
+        coherence_scores,outlier_percent,n_topics,diversity_score = eval_topic_model(docs,topics,probabilities,topic_model,n_workers=1)
+        res_dict = pack_update_param(None,coherence_scores,outlier_percent,n_topics,diversity_score)
+        print(res_dict)
+        print('Model saved in {}'.format(args.model_checkpoint))
 
     ## track executionTime
     executionTime = (time.time() - startTime)
