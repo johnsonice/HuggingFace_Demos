@@ -38,11 +38,13 @@ def topic_model_args(args_list=None):
     parser.add_argument('--metric', action='store', dest='metric',
                             default='euclidean',type=str) 
     parser.add_argument('--min_df', action='store', dest='min_df',
-                            default=10,type=str) 
+                            default=15,type=str) 
     parser.add_argument('--n_worker', action='store', dest='n_worker',
                             default=1,type=int)                  
     parser.add_argument('--chunk_size', action='store', dest='chunk_size',
                             default=20,type=int) 
+    parser.add_argument('--nr_topics', action='store', dest='nr_topics',
+                            default='auto',type=str)
     parser.add_argument('--no_load_emb', action='store_false', dest='LOAD_EMB') 
     parser.add_argument('--tune', action='store_true', dest='TUNE') 
     parser.add_argument('--cal_prob', action='store_true', dest='calculate_probabilities') 
@@ -53,6 +55,10 @@ def topic_model_args(args_list=None):
         args = parser.parse_args(args_list) 
     else:
         args = parser.parse_args()    
+
+    if args.nr_topics != 'auto':
+        args.nr_topics = int(args.nr_topics)
+
     return args
 
 # train_args = {
@@ -79,7 +85,7 @@ def topic_model_args(args_list=None):
 
 #%%
 if __name__ == "__main__":
-    t_args = topic_model_args()
+    t_args = topic_model_args(['--nr_topics','1'])
     print(t_args)
 
     # hyper_params_list =  hyper_param_permutation(train_args)

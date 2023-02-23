@@ -106,21 +106,27 @@ def model_setup(train_args):
                                         )               
     ## ctfidf param can be pass in topicbert main function 
 
+    if train_args.TUNE:
+        emb_model = None
+    else:
+        print('use {} as embeding model'.format(train_args.model_checkpoint))
+        emb_model = SentenceTransformer(train_args.model_checkpoint)  
 
     ## call main function 
     topic_model = BERTopic(
                     umap_model=umap_model,              # Reduce dimensionality 
                     hdbscan_model=hdbscan_model,        # Step 3 - Cluster reduced embeddings
                     vectorizer_model=vectorizer_model,  # Step 4,5 - use bang of words and ctfidf for topic representation
-                    diversity= train_args.diversity,            # Step 6 - Diversify topic words ; maybe also try 0.5?
+                    embedding_model=emb_model,
+                    #diversity= train_args.diversity,            in 0.14, removed # Step 6 - Diversify topic words ; maybe also try 0.5?
                     ## other params 
                     language="English",
-                    verbose=args.verbose,
+                    verbose=train_args.verbose,
                     top_n_words=train_args.top_n_words,         # number of topic words to return; can be changed after model is trained 
                                                                 # https://maartengr.github.io/BERTopic/api/bertopic.html#bertopic._bertopic.BERTopic.update_topics
                     min_topic_size=train_args.min_cluster_size, # this should be the same as min_cluster_size in HDBSCAN
-                    nr_topics='auto',               # number of topics you want to reduce to ; auto will use results from HDBSCAN on c-tfidf
-                    calculate_probabilities = args.calculate_probabilities, # Whether to calculate the probabilities of all topics per document instead of the probability of the assigned topic per document. 
+                    nr_topics=train_args.nr_topics,               # number of topics you want to reduce to ; auto will use results from HDBSCAN on c-tfidf
+                    calculate_probabilities = train_args.calculate_probabilities, # Whether to calculate the probabilities of all topics per document instead of the probability of the assigned topic per document. 
                     )
     
     return topic_model 
@@ -195,6 +201,8 @@ if __name__ == "__main__":
     #                          '--result_path','/data/chuang/Language_Model_Training_Data/Models/Topic_Models/baeline/hp_tune_results.csv'
     #                          ])
     args = topic_model_args()
+
+
     #%%
     ## set paths 
     model_name = args.model_checkpoint
@@ -271,8 +279,12 @@ if __name__ == "__main__":
         print(args)
         #for i in tqdm(range(1)):
         topics,probabilities,topic_model = train_topic_model(args,docs,embeddings)
+        ## save model and model outputs 
         topic_model_out_path = os.path.join(args.out_folder,'topic_model')
-        topic_model.save(topic_model_out_path, save_embedding_model=False)
+        topic_model.save(topic_model_out_path, save_embedding_model=True)
+        np.save(os.path.join(args.out_folder,'topics.npy'),np.array(topics))
+        np.save(os.path.join(args.out_folder,'probabilities.npy'),np.array(probabilities))
+
         coherence_scores,outlier_percent,n_topics,diversity_score = eval_topic_model(docs,topics,probabilities,topic_model,n_workers=1)
         res_dict = pack_update_param(None,coherence_scores,outlier_percent,n_topics,diversity_score)
         print(res_dict)

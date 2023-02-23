@@ -6,8 +6,10 @@ python bert_topic_hyper_tuning.py \
 --n_components 3 \
 --min_cluster_size 40 \
 --min_samples 10 \
+--nr_topics 500 \
 --metric euclidean \
 --top_n_words 5 \
 --n_worker 1 \
 --verbose \
-
+## --cal_prob \
+## {'coherence': 0.5130032634953471, 'diversity': 0.89, 'outlier': 0.5326187284534072, 'number_topics': 200}
