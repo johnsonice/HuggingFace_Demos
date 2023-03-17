@@ -8,6 +8,12 @@ python bert_topic_hyper_tuning.py \
 --min_samples 20 \
 --metric euclidean \
 --top_n_words 5 \
---n_worker 1 \
+--min_df 10 \
 --verbose \
+#--nr_topics 1500 \
+#--n_worker 1 \
 
+# n_neighbors	n_components	min_cluster_size	min_samples	top_n_words	number_topics	coherence	outlier
+# 5	3	20	20	5	1782	0.501545	0.532348
+
+# {'coherence': 0.5272108185774758, 'diversity': 0.7588882455124494, 'outlier': 0.5237587368681976, 'number_topics': 1727}
