@@ -38,7 +38,7 @@ def topic_model_args(args_list=None):
     parser.add_argument('--metric', action='store', dest='metric',
                             default='euclidean',type=str) 
     parser.add_argument('--min_df', action='store', dest='min_df',
-                            default=15,type=str) 
+                            default=10,type=int) 
     parser.add_argument('--n_worker', action='store', dest='n_worker',
                             default=1,type=int)                  
     parser.add_argument('--chunk_size', action='store', dest='chunk_size',
