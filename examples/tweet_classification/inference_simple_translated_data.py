@@ -57,7 +57,7 @@ ft = Features({'created_at':Value('string'),
     'text':Value('string')})
 #%%
 if __name__ == "__main__":    
-    args = t_args([])
+    args = t_args()
     ### use lattest roberta based twitter sentiment model 
     MODEL = f"cardiffnlp/twitter-roberta-base-sentiment-latest"
     data_folder = '/data/chuang/Twitter_Data/Twitter_API_PY/Data/Tweet_by_user/chunks'
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     # chunk_dataset = load_dataset('csv', 
     #                             data_files=Inference_data_dir,)
     # #                            features=ft)
-    in_df = pd.read_csv(Inference_data_dir)
+    in_df = pd.read_csv(Inference_data_dir,dtype=str)
     chunk_dataset = Dataset.from_pandas(in_df)
     #%%
     print(chunk_dataset[10])
@@ -109,33 +109,3 @@ if __name__ == "__main__":
     #df.to_pickle(os.path.join(data_folder,'climate_awareness_agg_senti.parquet'))
     #%%
     
-    #%%
-    # tokenizer = AutoTokenizer.from_pretrained(MODEL)
-    # config = AutoConfig.from_pretrained(MODEL)
-    # # PT
-    # model = AutoModelForSequenceClassification.from_pretrained(MODEL)
-    # #%%
-    # text = "Covid cases are increasing fast!"
-    # text = preprocess(text)
-    # #%%
-    # encoded_input = tokenizer(text, return_tensors='pt')
-    # output = model(**encoded_input)
-    # scores = output[0][0].detach().numpy()
-    # scores = softmax(scores)
-    # # %%
-    # ranking = np.argsort(scores)
-    # ranking = ranking[::-1]
-    # #%%
-    # for i in range(scores.shape[0]):
-    #     l = config.id2label[ranking[i]]
-    #     s = scores[ranking[i]]
-    #     print(f"{i+1}) {l} {np.round(float(s), 4)}")
-    # # %%
-    # ### use pip 
-    # pipe = pipeline(task="text-classification",
-    #                 model = MODEL,
-    #                 tokenizer=MODEL,return_all_scores=True)#,device=0)
-    # #%%
-    # print(pipe(text))
-    # print(transform_pipe_results(pipe(text)[0]))
-    # #%%
