@@ -96,7 +96,7 @@ if __name__ == "__main__":
     print('Number of docs: {}'.format(len(docs)))
 
     ## load mapping file 
-    topic_map_p = os.path.join(args.MODEL_OUTPUT,'topic_map.csv')   
+    topic_map_p = os.path.join(args.MODEL_OUTPUT,'topic_map_v2.csv')   
     merge_list,category_dict,id2cat_dict=read_transform_topic_map(topic_map_p)
     old_topic_df = get_eval_stats(topic_model)
     old_topic_words_dict = old_topic_df.set_index('Topic')['topic_words'].to_dict()
@@ -133,3 +133,4 @@ if __name__ == "__main__":
     topic_model.save(args.TOPIC_MODEL_OUT_PATH,save_embedding_model=True)
     topic_df.to_csv(os.path.join(args.MODEL_OUTPUT,'merged_topic_info.csv'), index=False)
     
+# %%
