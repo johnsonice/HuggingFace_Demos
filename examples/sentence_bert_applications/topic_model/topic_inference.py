@@ -117,14 +117,16 @@ class TM(object):
                 if cache_dir:
                     final_df.to_csv(os.path.join(cache_dir,'batch_{}.csv'.format(idx)),index=False)
         
-        all_df = pd.concat(res_list, axis=0, ignore_index=True)
-        if cache_dir:
-            if batch_id_range:
-                all_df.to_csv(os.path.join(cache_dir,'batch_{}.csv'.format(batch_id_range)),index=False)
-            else:
-                all_df.to_csv(os.path.join(cache_dir,'batch_{}.csv'.format(all)),index=False)
+        if len(res_list)>0:
+            all_df = pd.concat(res_list, axis=0, ignore_index=True)
+            if cache_dir:
+                if batch_id_range:
+                    all_df.to_csv(os.path.join(cache_dir,'batch_{}.csv'.format(batch_id_range)),index=False)
+                else:
+                    all_df.to_csv(os.path.join(cache_dir,'batch_{}.csv'.format(all)),index=False)
 
-        return all_df
+            return all_df
+        return res_list
 
 #%%
 
