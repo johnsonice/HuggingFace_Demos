@@ -27,6 +27,8 @@ def model_args(args_list=None):
                     default=os.path.join(MODEL_OUTPUT,'topics_v2.npy'),type=str)
     parser.add_argument('-txf', '--text_folder', action='store', dest='text_folder',
                     default=os.path.join(MODEL_OUTPUT,'text_data'),type=str)
+    parser.add_argument('-txfn', '--text_filename', action='store', dest='text_filename',
+                    default='program.csv',type=str)
     parser.add_argument('-cache', '--cache_folder', action='store', dest='cache_folder',
                     default=os.path.join(MODEL_OUTPUT,'results_cache'),type=str)
     parser.add_argument('-batch_id_range', '--batch_id_range', action='store', dest='batch_id_range',
@@ -134,8 +136,9 @@ if __name__ == "__main__":
     #startTime = time.time()
     args = model_args()
     #%%
-    fp = os.path.join(args.text_folder,'aiv.csv')
+    fp = os.path.join(args.text_folder,args.text_filename)
     df = pd.read_csv(fp)
+    print('Reading inference file : {}'.format(fp))
     print('total docs for inference : {}'.format(len(df)))
     #%%
     M = TM(args.TOPIC_MODEL_OUT_PATH)
