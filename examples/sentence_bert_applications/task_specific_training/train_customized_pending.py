@@ -1,6 +1,6 @@
 """
 Train SBERT model with customized loss function 
-
+follow this:https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/blob/main/train_script.py
 """
 #%%
 from transformers import (
@@ -84,8 +84,6 @@ lr_scheduler = get_linear_schedule_with_warmup(
     num_warmup_steps=100,
     num_training_steps=1000,
 )
-    
-
 
 batch = [['this is a test sentence','this is a similar test sentence','complete contradictory to anything else'],
         ['this is a test sentence','this is a similar test sentence','complete contradictory to anything else']]
