@@ -3,14 +3,11 @@ import os,sys,openai
 import pandas as pd 
 from data_utils import get_completion
 sys.path.insert(0,'../../libs')
-from utils import load_json
+from utils import load_json,exception_handler
 from prompts import gen_q_basic,gen_q_fewshot,gen_q_cot
 import tqdm,re
-# from llama_index import Document
-# from llama_index.node_parser import SimpleNodeParser
-# from llama_index.schema import TextNode, NodeRelationship, RelatedNodeInfo
-# from llama_index.llms import OpenAI
-# from llama_index.finetuning import generate_qa_embedding_pairs
+import ast
+import time
 
 key = load_json('../../../openai_key.json') 
 os.environ['OPENAI_API_KEY'] = key['ChatGPT1']['API_KEY']
@@ -29,13 +26,30 @@ def load_process_aiv(file_path,keep_n=None):
 def compare_prompts_results(prompts:list,context_info,n_questions):
     for p in prompts:
         print('\n\nPrompt used: \n{} \n'.format(p['des']))
-        print(get_completion(prompt=p['Human'].format(context_str=context_info,
+        response = get_completion(prompt=p['Human'].format(context_str=context_info,
                                                         num_questions_per_chunk=n_questions),
                         sys_msg=p['System'],
-                        model='gpt-3.5-turbo'))
+                        model='gpt-3.5-turbo')
+        if p['parsing_func']:
+            print(p['parsing_func'](response))
+        else:
+            print(response)
         
     return None
 
+@exception_handler(error_msg=None,error_return=None)
+def gen_q_by_context(prompt_template,context_info,n_questions):
+    response = get_completion(prompt=prompt_template['Human'].format(context_str=context_info,
+                                                        num_questions_per_chunk=n_questions),
+                            sys_msg=prompt_template['System'],
+                            model='gpt-3.5-turbo')
+    time.sleep(1) ## wait for a sec to alleviate server side errors 
+    if prompt_template['parsing_func']:
+        questions = prompt_template['parsing_func'](response)
+    else:
+        raise Exception('Please define your result parsing function in prompt template')
+
+    return questions 
 
 #%%
 if __name__ == "__main__":
@@ -44,34 +58,66 @@ if __name__ == "__main__":
     data_folder = '/data/LLM_DATA/Fund_docs'
     raw_aiv_file = os.path.join(data_folder,'aiv.20230820.csv')
     raw_program_file = os.path.join(data_folder,'program.20230820.csv')
-    keep_n = 50
+
+    out_aiv_file = os.path.join(data_folder,'aiv_QCA_data.xlsx')
+    out_program_file = os.path.join(data_folder,'program_QCA_data.xlsx')
+    
+    keep_n = 1000
     aiv_df = load_process_aiv(raw_aiv_file,keep_n=keep_n)
     program_df = load_process_aiv(raw_program_file,keep_n=keep_n)
 
-    #%%
+    #%% ------------------------
     ## simple test question generation using different prompt
     context_info = 'To accelerate growth while maintaining macroeconomic stability, policies should continue to focus on: (i) accelerating efforts to attract investment and raise the economy’s potential by improving the business environment, reforming the large state-owned enterprise (SOE) sector, developing a market for agricultural land, and tackling corruption, which remains a key challenge; (ii) ensuring fiscal sustainability through fiscal consolidation, supported by pension reform, more efficient public spending, and a more equitable and growth-friendly tax system; (iii) further reducing inflation and rebuilding reserves; and (iv) repairing viable banks and reviving sound bank lending.'
-    n_questions = 5
+    n_questions = 3
     compare_prompts_results([gen_q_basic,gen_q_fewshot,gen_q_cot],context_info,n_questions)
     
-    #%%
+    #%% --------------------------------------
+    ## generate questions based on given context 
     prompt_template = gen_q_basic
     n_questions = 3
+    
+    ### we first do aiv --------------------------
     res = []
-    for context_info in tqdm.tqdm(aiv_df['par'][:2]):
-        response = get_completion(prompt=prompt_template['Human'].format(context_str=context_info,
-                                                        num_questions_per_chunk=n_questions),
-                                    sys_msg=prompt_template['System'],
-                                    model='gpt-3.5-turbo')
-        result = str(response).strip().split("\n")
-        questions = [
-            re.sub(r"^\d+[\).\s]", "", question).strip() for question in result
-        ]
-        questions = [question for question in questions if len(question) > 0]
-        add_obs = [(q,context_info) for q in questions]
-        res.extend(add_obs)
-    #%%
+    for context_info in tqdm.tqdm(aiv_df['par']):
+        questions = gen_q_by_context(prompt_template,context_info,n_questions)
+        if questions:
+            add_obs = [(q,context_info,'') for q in questions] ## format it the same way as human labled data
+            res.extend(add_obs)
+        
+        if len(res) > 0 and len(res)%100==0:
+            ## export as it produces 
+            res_aiv_df = pd.DataFrame(res,columns=['question','context','answer'])
+            res_aiv_df.to_excel(out_aiv_file)
+            
+    ## put final output into a dataframe for review 
+    res_aiv_df = pd.DataFrame(res,columns=['question','context','answer'])
+    res_aiv_df.to_excel(out_aiv_file)
 
+    ### then we do program ----------------------
+    res = []
+    for context_info in tqdm.tqdm(program_df['par']):
+        questions = gen_q_by_context(prompt_template,context_info,n_questions)
+        if questions:
+            add_obs = [(q,context_info,'') for q in questions] ## format it the same way as human labled data
+            res.extend(add_obs)
+        
+        if len(res) > 0 and len(res)%100==0:
+            ## export as it produces 
+            res_program_df = pd.DataFrame(res,columns=['question','context','answer'])
+            res_program_df.to_excel(out_program_file)
+            
+    ## put into a dataframe for review 
+    res_program_df = pd.DataFrame(res,columns=['question','context','answer'])
+    res_program_df.to_excel(out_program_file)
+
+
+
+# from llama_index import Document
+# from llama_index.node_parser import SimpleNodeParser
+# from llama_index.schema import TextNode, NodeRelationship, RelatedNodeInfo
+# from llama_index.llms import OpenAI
+# from llama_index.finetuning import generate_qa_embedding_pairs
 
 # def generate_q_with_llamaindex():
 #     '''

@@ -2,6 +2,10 @@ import json
 import itertools
 import pandas as pd
 import pathlib,os
+import logging
+from functools import wraps
+
+logging.basicConfig(level=logging.ERROR)
 
 def load_json(f_path):
     with open(f_path) as f:
@@ -32,7 +36,6 @@ def flatten_list(list_of_lists):
     '''
     list_of_lists : TYPE
         any iregular list.
-
     Returns
     -------
     a flat list
@@ -94,6 +97,32 @@ def get_all_files(dirName,end_with=None): # end_with=".json"
         allFiles = [f for f in allFiles if pathlib.Path(f).suffix.lower() == end_with ] 
 
     return allFiles   
+
+def exception_handler(error_msg='error handleing triggered',error_return=None):
+    '''
+    follow: https://stackoverflow.com/questions/30904486/python-wrapper-function-taking-arguments-inside-decorator
+    '''
+    def outter_func(func):
+        @wraps(func)
+        def inner_function(*args, **kwargs):
+            try:
+                res = func(*args, **kwargs)
+            except Exception as e:
+                custom_msg = kwargs.get('error_msg', None)
+                if custom_msg:
+                    logging.error(custom_msg)
+                else:
+                    logging.error(str(e))
+                res = error_return
+            return res 
+        return inner_function
+    
+    return outter_func
+
+@exception_handler(error_msg='test',error_return='error')
+def test_error(inp):
+    res = inp[0]
+    return res 
 
 if __name__ == "__main__":
     
