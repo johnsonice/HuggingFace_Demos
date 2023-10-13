@@ -62,7 +62,7 @@ if __name__ == "__main__":
     out_aiv_file = os.path.join(data_folder,'aiv_QCA_data.xlsx')
     out_program_file = os.path.join(data_folder,'program_QCA_data.xlsx')
     
-    keep_n = 1000
+    keep_n = 3000
     aiv_df = load_process_aiv(raw_aiv_file,keep_n=keep_n)
     program_df = load_process_aiv(raw_program_file,keep_n=keep_n)
 

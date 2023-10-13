@@ -1,6 +1,7 @@
 import ast
 import re
 
+#%%
 def parst_question_list(response):
     result = str(response).strip().split("\n")
     questions = [

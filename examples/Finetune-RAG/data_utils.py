@@ -2,13 +2,10 @@
 
 #%%
 import openai
-import os
+import os, uuid
 from functools import wraps
 import logging
-logging.basicConfig(level=logging.INFO,format='%(levelname)s - %(message)s') #set up the config
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
+from sentence_transformers.evaluation import InformationRetrievalEvaluator
 
 openai.api_key  = os.getenv('OPENAI_API_KEY')
 
@@ -27,29 +24,23 @@ def get_completion(prompt, sys_msg = None, model="gpt-3.5-turbo",temperature=0):
     )
     return response.choices[0].message["content"]
 
-def exception_handler(error_msg='error handleing triggered',error_return=None):
-    '''
-    follow: https://stackoverflow.com/questions/30904486/python-wrapper-function-taking-arguments-inside-decorator
-    '''
-    def outter_func(func):
-        @wraps(func)
-        def inner_function(*args, **kwargs):
-            try:
-                res = func(*args, **kwargs)
-            except Exception as e:
-                custom_msg = kwargs.get('error_msg', None)
-                if custom_msg:
-                    logger.warning(custom_msg)
-                else:
-                    logger.warning(str(e))
-                res = error_return
-            return res 
-        return inner_function
+def construct_retrieve_evaluator(df_eval,q_k='question',c_k='context'):
+    """
+    df_eval : pandas DF with questions and context as key
+    """
+    queries = {}
+    relevant_docs = {}
+    corpus = {}
+    context_groups = df_eval.groupby(c_k)
+    for group_name,group_df in context_groups:
+        corpus_id = str(uuid.uuid4())
+        corpus[corpus_id] = group_df[c_k].iloc[0]
+        for index,row in group_df.iterrows():
+            question_id = str(uuid.uuid4())
+            queries[question_id] = row[q_k]
+            relevant_docs[question_id] = [corpus_id]
     
-    return outter_func
-
-@exception_handler(error_msg='test',error_return='error')
-def test_error(inp):
-    res = inp[0]
-    return res 
+    evaluator = InformationRetrievalEvaluator(queries, corpus, relevant_docs)
+    
+    return evaluator
 #%%
