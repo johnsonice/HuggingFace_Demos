@@ -37,6 +37,7 @@ class SentenceTransformersCollator:
         self.tokenizer = tokenizer
         self.text_columns = text_columns
         self.max_length=tokenizer.model_max_length
+        self.padding=True
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, torch.Tensor]:
         ## label is actually not used in multiple negative ranking loss
@@ -50,14 +51,18 @@ class SentenceTransformersCollator:
         return batch
 
     def _encode(self, texts: List[str]) -> BatchEncoding:
-        tokens = self.tokenizer(texts, return_attention_mask=False,truncation=True)
-        return self.tokenizer.pad(
-            tokens,
-            padding=self.padding,
-            max_length=self.max_length,
-            pad_to_multiple_of=self.pad_to_multiple_of,
-            return_tensors=self.return_tensors,
-        )
+        tokens = self.tokenizer(texts, #return_attention_mask=False,
+                                padding=self.padding,
+                                truncation=True,
+                                return_tensors=self.return_tensors)
+        return tokens
+        # return self.tokenizer.pad(
+        #     tokens,
+        #     padding=self.padding,
+        #     max_length=self.max_length,
+        #     pad_to_multiple_of=self.pad_to_multiple_of,
+        #     return_tensors=self.return_tensors,
+        # )
 
 
 class SentenceTransformersTrainer(Trainer):
