@@ -7,108 +7,36 @@ Follow :
 - https://github.com/FlagOpen/FlagEmbedding/blob/master/FlagEmbedding/baai_general_embedding/finetune/modeling.py
 """
 #%%
-import os , ssl, argparse,sys
+import sys
 sys.path.insert(0,'../../libs')
-import config
 from arguments import train_args
-import pandas as pd
-from data_utils import construct_retrieve_evaluator
-
-from transformers import TrainingArguments,TrainerCallback
-from datasets import Dataset,load_dataset,concatenate_datasets,load_from_disk
-import torch
-from torch.utils.data import DataLoader
-from torch import nn
+from data_utils import load_train_eval_dataset
 from SBERT_HF_utils import SentenceTransformersCollator
 from transformers.optimization import get_linear_schedule_with_warmup
 from tqdm.auto import tqdm
-
+import torch
+from torch.utils.data import DataLoader
 from transformers import (
-    AdamW,
-    AutoModel,
     AutoTokenizer,
     get_linear_schedule_with_warmup,
-    set_seed,
-    DataCollatorWithPadding,
 )
+from models import AutoModelForSentenceEmbedding
 
-#%%
-def load_train_eval_dataset(train_file_path=None,eval_file_path=None):
-    keep_cols=['question', 'context', 'answer']
-    if train_file_path:
-        t_df = pd.read_excel(train_file_path)[keep_cols]
-        t_dataset = Dataset.from_pandas(t_df)
-    else:
-        t_dataset=None
-        
-    if eval_file_path:
-        e_df = pd.read_excel(eval_file_path)[keep_cols]
-        e_dataset = Dataset.from_pandas(e_df)
-    else:
-        e_dataset=None  
-          
-    return t_dataset,e_dataset
-
-def tokenize_retrieve_ds(input_ds,text_columns_dict):
-    for k,v in text_columns_dict.items():
-        input_ds = input_ds.map(
-                        lambda x: tokenizer(
-                                x[v], truncation=True#,return_tensors='pt' #padding='max_length', #max_length=128,
-                        ), 
-                        batched=True,
-                    )
-        input_ds = input_ds.rename_column('input_ids', '{}_ids'.format(k))
-        input_ds = input_ds.rename_column('attention_mask', '{}_mask'.format(k))
-        
-    return input_ds
-    
-class AutoModelForSentenceEmbedding(nn.Module):
-    def __init__(self, 
-                 model_name, 
-                 sentence_pooling_method: str = 'mean',
-                 cache_dir=None,
-                 normalize=True):
-        super(AutoModelForSentenceEmbedding, self).__init__()
-
-        self.model = AutoModel.from_pretrained(model_name,
-                                               cache_dir=cache_dir)
-        self.cross_entropy = nn.CrossEntropyLoss(reduction='mean')
-        self.normalize = normalize
-        self.sentence_pooling_method = sentence_pooling_method
-        
-
+class EmbeddingModel(AutoModelForSentenceEmbedding):
     def forward(self, **kwargs):
         model_output = self.model(input_ids=kwargs.get('input_ids'),
-                                  attention_mask= kwargs.get('attention_mask')
-                                  )
-        embeddings = self.mean_pooling(model_output, kwargs['attention_mask'])
+                                attention_mask= kwargs.get('attention_mask')
+                                )
+        embeddings = self._mean_pooling(model_output, kwargs['attention_mask'])
         if self.normalize:
-            embeddings = nn.functional.normalize(embeddings, p=2, dim=1)
+            embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
         return embeddings
-
-    def mean_pooling(self, model_output, attention_mask):
-        token_embeddings = model_output[0]  # First element of model_output contains all token embeddings
-        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-        return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-
-    # def save_pretrained(self, output_path):
-    #     if xm.is_master_ordinal():
-    #         self.tokenizer.save_pretrained(output_path)
-    #         self.model.config.save_pretrained(output_path)
-
-    #     xm.save(self.model.state_dict(), os.path.join(output_path, "pytorch_model.bin"))
-
-
-
 #%%
 if __name__ == "__main__":
     args = train_args([])
-    # %%
     train_ds,eval_ds = load_train_eval_dataset(args.train_file,args.eval_file)
-    #%%
     tokenizer =  AutoTokenizer.from_pretrained(args.model_checkpoint,cache_folder =args.cache_dir)
-    #%%
     ## let's just tokenize it on the fly using data collator
     text_columns = ['question','context']
     data_collator = SentenceTransformersCollator(
@@ -119,7 +47,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_ds, batch_size=batch_size,collate_fn=data_collator)
     eval_loader = DataLoader(eval_ds, batch_size=batch_size,collate_fn=data_collator)
     # %%
-    model = AutoModelForSentenceEmbedding(args.model_checkpoint, tokenizer)
+    model = EmbeddingModel(args.model_checkpoint,cache_dir=args.cache_dir)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     optim = torch.optim.Adam(model.parameters(), lr=2e-5)

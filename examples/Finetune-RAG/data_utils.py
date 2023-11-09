@@ -3,8 +3,10 @@
 #%%
 import openai
 import os, uuid
+import pandas as pd
 from functools import wraps
 import logging
+from datasets import Dataset
 from sentence_transformers.evaluation import InformationRetrievalEvaluator
 
 openai.api_key  = os.getenv('OPENAI_API_KEY')
@@ -43,4 +45,33 @@ def construct_retrieve_evaluator(df_eval,q_k='question',c_k='context'):
     evaluator = InformationRetrievalEvaluator(queries, corpus, relevant_docs)
     
     return evaluator
+
+def load_train_eval_dataset(train_file_path=None,eval_file_path=None):
+    keep_cols=['question', 'context', 'answer']
+    if train_file_path:
+        t_df = pd.read_excel(train_file_path)[keep_cols]
+        t_dataset = Dataset.from_pandas(t_df)
+    else:
+        t_dataset=None
+        
+    if eval_file_path:
+        e_df = pd.read_excel(eval_file_path)[keep_cols]
+        e_dataset = Dataset.from_pandas(e_df)
+    else:
+        e_dataset=None  
+          
+    return t_dataset,e_dataset
+
+def tokenize_retrieve_ds(input_ds,text_columns_dict,tokenizer):
+    for k,v in text_columns_dict.items():
+        input_ds = input_ds.map(
+                        lambda x: tokenizer(
+                                x[v], truncation=True#,return_tensors='pt' #padding='max_length', #max_length=128,
+                        ), 
+                        batched=True,
+                    )
+        input_ds = input_ds.rename_column('input_ids', '{}_ids'.format(k))
+        input_ds = input_ds.rename_column('attention_mask', '{}_mask'.format(k))
+        
+    return input_ds
 #%%
