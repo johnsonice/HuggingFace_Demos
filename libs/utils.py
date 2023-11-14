@@ -1,9 +1,11 @@
+#%%
 import json
 import itertools
 import pandas as pd
 import pathlib,os
 import logging
 from functools import wraps
+import time
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -98,23 +100,31 @@ def get_all_files(dirName,end_with=None): # end_with=".json"
 
     return allFiles   
 
-def exception_handler(error_msg='error handleing triggered',error_return=None):
+def exception_handler(error_msg='error handleing triggered',
+                        error_return=None,
+                        attempts=3,delay=1):
     '''
     follow: https://stackoverflow.com/questions/30904486/python-wrapper-function-taking-arguments-inside-decorator
     '''
     def outter_func(func):
         @wraps(func)
         def inner_function(*args, **kwargs):
-            try:
-                res = func(*args, **kwargs)
-            except Exception as e:
-                custom_msg = kwargs.get('error_msg', None)
-                if custom_msg:
-                    logging.error(custom_msg)
-                else:
-                    logging.error(str(e))
-                res = error_return
-            return res 
+            for i in range(attempts):
+                try:
+                    res = func(*args, **kwargs)
+                    return res
+                except Exception as e:
+                    if i < attempts - 1:
+                        print(f"Function failed with error {e}. Retrying after {delay} seconds...")
+                        time.sleep(delay)
+                    else:
+                        custom_msg = kwargs.get('error_msg', None)
+                        if custom_msg:
+                            logging.error(custom_msg)
+                        else:
+                            logging.error(str(e))
+                        res = error_return
+                        return res 
         return inner_function
     
     return outter_func
@@ -123,7 +133,7 @@ def exception_handler(error_msg='error handleing triggered',error_return=None):
 def test_error(inp):
     res = inp[0]
     return res 
-
+#%%
 if __name__ == "__main__":
     
     
@@ -132,3 +142,6 @@ if __name__ == "__main__":
     
     res = hyper_param_permutation(inp_param)
     print(res)
+    #%%
+    test_error([1])
+# %%
