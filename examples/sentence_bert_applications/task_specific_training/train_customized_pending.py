@@ -113,6 +113,3 @@ if __name__ == "__main__":
 # test_sentences = ['this is just a test sentence','text # 2']
 # embs = M.get_embedings(test_sentences)
 # #%%
-
-
-
