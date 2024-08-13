@@ -66,8 +66,18 @@ class TM(object):
         ## check if p is alwasy the one with highest prob
         return t,p
     
-    def predict_and_merge(self,df,doc_col_name):
-        t,p = self.model.transform(df[doc_col_name])
+    def predict_no_outlier(self,input_test_list):
+        org_topics,p = self.model.transform(input_test_list)
+        print('... reducing outlier ...')
+        new_topics = self.model.reduce_outliers(input_test_list, org_topics,strategy="embeddings")
+        return new_topics,p
+    
+    def predict_and_merge(self,df,doc_col_name,reduce_outlier=True):
+        print('.... tranforming docs ....')
+        if reduce_outlier:
+            t,p = self.predict_no_outlier(df[doc_col_name])
+        else:
+            t,p = self.model.transform(df[doc_col_name])
         p_max_id = np.argmax(p,axis=1)
         max_prob = p[np.arange(len(p_max_id)), p_max_id]
         prob_df = pd.DataFrame(p)
@@ -134,7 +144,7 @@ class TM(object):
 
 if __name__ == "__main__":
     #startTime = time.time()
-    args = model_args()
+    args = model_args([])
     #%%
     fp = os.path.join(args.text_folder,args.text_filename)
     df = pd.read_csv(fp)
@@ -147,6 +157,9 @@ if __name__ == "__main__":
                                    batch_size=1000,
                                    cache_dir=args.cache_folder,
                                    batch_id_range=args.batch_id_range)
+    #%%
+
+    #%%
 
     # #%%
     # t,p = M.predict_topic(df['par'][:500])

@@ -21,7 +21,7 @@ def model_args(args_list=None):
     parser.add_argument('-tm', '--topic_model_path', action='store', dest='TOPIC_MODEL_PATH',
                     default=os.path.join(MODEL_OUTPUT,'topic_model_v2_nt1727_ch0527'),type=str)
     parser.add_argument('-tmo', '--topic_model_out_path', action='store', dest='TOPIC_MODEL_OUT_PATH',
-                    default=os.path.join(MODEL_OUTPUT,'topic_model_v2_mreged'),type=str)
+                    default=os.path.join(MODEL_OUTPUT,'topic_model_v2_mreged_reduce_outlier'),type=str)
     parser.add_argument('-em', '--embedding_model_path', action='store', dest='SBERT_CHECKPOINT',
                     default=SBERT_CHECKPOINT,type=str)
     parser.add_argument('-ep', '--emb_path', action='store', dest='emb_path',

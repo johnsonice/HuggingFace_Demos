@@ -1,4 +1,15 @@
 
+commands=(
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 0-10"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 10-20"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 20-30"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 30-40"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 40-50"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 50-60"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 60-70"
+)
+
+
 # # Define the commands you want to run
 # commands=(
 #     "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 0-100"
@@ -11,16 +22,16 @@
 # )
 
 
-# Define the commands you want to run - for programs 
-commands=(
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 0-100 -txfn program.csv"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 100-200 -txfn program.csv"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 200-300 -txfn program.csv"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 300-400 -txfn program.csv"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 400-500 -txfn program.csv"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 500-600 -txfn program.csv"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 600-700 -txfn program.csv"
-)
+# # Define the commands you want to run - for programs 
+# commands=(
+#     "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 0-100 -txfn program.csv"
+#     "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 100-200 -txfn program.csv"
+#     "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 200-300 -txfn program.csv"
+#     "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 300-400 -txfn program.csv"
+#     "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 400-500 -txfn program.csv"
+#     "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 500-600 -txfn program.csv"
+#     "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference.py -batch_id_range 600-700 -txfn program.csv"
+# )
 
 # Run each command in a separate terminal window
 for cmd in "${commands[@]}"; do
