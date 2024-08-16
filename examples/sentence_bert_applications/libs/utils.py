@@ -137,6 +137,26 @@ def get_all_files(dirName,end_with=None): # end_with=".json"
 
     return allFiles   
 
+def accumulate_csv_files(directory,end_with='.csv',process_func=None):
+    """
+    This function reads all CSV files from a given directory and appends them into one DataFrame.
+    """
+    # List to hold dataframes
+    dataframes = []
+    # Iterate over all files in the directory
+    for filename in os.listdir(directory):
+        if filename.endswith(end_with):
+            filepath = os.path.join(directory, filename)
+            # Read the CSV file and append to the list
+            df = pd.read_csv(filepath)
+            if process_func:
+                df = process_func(df)
+            dataframes.append(df)
+    # Concatenate all dataframes in the list
+    combined_df = pd.concat(dataframes, ignore_index=True)
+    
+    return combined_df
+
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):

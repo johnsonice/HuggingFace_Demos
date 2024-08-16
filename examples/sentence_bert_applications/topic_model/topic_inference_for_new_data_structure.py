@@ -101,7 +101,7 @@ def model_args(args_list=None):
 
 if __name__ == "__main__":
     #startTime = time.time()
-    args = model_args([])
+    args = model_args()
     #%%
     df = accumulate_csv_files(args.text_folder,process_func=process_df)
     #%%
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     M = TM(args.TOPIC_MODEL_OUT_PATH)
     #%%
     new_df = M.batch_predict_topic(df,doc_col_name='par',
-                                   batch_size=5000,
+                                   batch_size=500,
                                    cache_dir=args.cache_folder,
                                    batch_id_range=args.batch_id_range)
     #%%

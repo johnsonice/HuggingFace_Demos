@@ -1,12 +1,11 @@
 
 commands=(
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 0-10"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 10-20"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 20-30"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 30-40"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 40-50"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 50-60"
-    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 60-70"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 0-100"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 100-200"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 200-300"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 300-400"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 400-500"
+    "source /apps/anaconda3/bin/activate && conda activate sbert && python topic_inference_for_new_data_structure.py -batch_id_range 500-600"
 )
 
 

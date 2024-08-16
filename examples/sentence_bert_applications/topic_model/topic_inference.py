@@ -103,6 +103,7 @@ class TM(object):
                 else:
                     e = int(10e10)
                 batch_id_range = range(s,e)
+                print('Working for batches {} - {}'.format(s,e))
             except:
                 batch_id_range=None
                 raise('parsing batch_id range failed')
@@ -119,13 +120,14 @@ class TM(object):
                         res_list.append(final_df)
                     if cache_dir:
                         final_df.to_csv(os.path.join(cache_dir,'batch_{}.csv'.format(idx)),index=False)
+                else:
+                    continue
             else:
                 print('working on batch : {}/{} ....'.format(idx,len(doc_batches)))
                 db=db.reset_index()
                 final_df = self.predict_and_merge(db,doc_col_name)
                 if accumulate:
                     res_list.append(final_df)
-
                 if cache_dir:
                     final_df.to_csv(os.path.join(cache_dir,'batch_{}.csv'.format(idx)),index=False)
         
