@@ -1,6 +1,11 @@
 #%%
 ### topic merging based on manual labeled categories 
 
+## inference script for AIV topic identification exercise 
+
+
+
+
 import pandas as pd
 from tqdm import tqdm
 from topic_inference import TM
