@@ -1,3 +1,10 @@
+"""
+Post process topic modeling infernce results 
+- recategorize non-program review docs to non-program topics 
+- manually identify certain categories"
+    - digitial money 
+    - gender [pending]
+"""
 #%%
 import os,sys
 sys.path.insert(0,'../../libs')
