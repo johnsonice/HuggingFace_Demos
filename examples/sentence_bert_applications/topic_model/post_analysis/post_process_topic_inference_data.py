@@ -2,8 +2,9 @@
 Post process topic modeling infernce results 
 - recategorize non-program review docs to non-program topics 
 - manually identify certain categories"
-    - digitial money 
-    - gender [pending]
+    - digitial money 434
+    - gender 435
+
 """
 #%%
 import os,sys
@@ -12,7 +13,8 @@ import pandas as pd
 from utils import accumulate_csv_files
 import re
 from search_util import get_keywords_groups,construct_rex,find_exact_keywords
-
+import numpy as np
+#%%
 
 def process_keywords_with_logic(seasrch_key_files,return_merged_keys=True,
                                 return_logic=True,and_key='\+',key_lower=True,
@@ -70,7 +72,7 @@ if __name__ =="__main__":
     ## define file pathes ##
     data_folder = '/data/chuang/Language_Model_Training_Data/Models/Topic_Models/step_10000'
     input_folder = os.path.join(data_folder,'results_cache')
-    topic_map_path = os.path.join(data_folder,'topic_v2_merged_info.csv')
+    topic_map_path = os.path.join(data_folder,'topic_v2_merged_info_customized.csv')
     country_meta_path = os.path.join(data_folder,'other_data','country_map.xlsx')
     document_meta_path = os.path.join(data_folder,'other_data','All_AIV_2008-2023_meta.xlsx')
     keywords_path = os.path.join(data_folder,'keywords','search_terms.xlsx')
@@ -138,24 +140,48 @@ if __name__ =="__main__":
     merged_df.loc[merged_df['joint_flag']==False,'revised_topic_id'] = merged_df['non-program_topic_id']
 
     ### update topic id with keywords search 
-    keywords_dict , all_search_keywords, logical_keys = process_keywords_with_logic(keywords_path,and_key='+')
+    and_key = '+'  ## define and logic keys in provided keywords data 
+    keywords_dict , all_search_keywords, logical_keys = process_keywords_with_logic(keywords_path,and_key=and_key)
     search_rex = construct_rex(all_search_keywords,casing=False,plural=False)  ## here we are using case insensitive
     merged_df['search_res'] = merged_df['par'].str.lower().apply(find_exact_keywords,rex=search_rex,return_count=False) 
     keywords_df = pd.json_normalize(merged_df.pop('search_res')).fillna(0)
+    matched_cols = [k for k in keywords_df.columns if k in all_search_keywords] ## all are lower case, so we are fine here  
+    keywords_df[matched_cols] = keywords_df[matched_cols].applymap(lambda x: 1 if x >= 1 else 0) ## turn all match to dummies 
+    #%%
+    ## apply logicals based on keywords patterns 
+    for lk in logical_keys:
+        ks = [k.strip() for k in lk.split(and_key)]
+        if all([k in matched_cols for k in ks]):
+            keywords_df[lk] = keywords_df[ks].sum(axis=1)
+            keywords_df[lk] = np.where(keywords_df[lk] == len(ks), 1, 0)
+        else:
+            keywords_df[lk] = 0 
+    ## drop original columns 
+    #for k in ks:
+    #    if k in matched_cols:
+    #        df.drop([k],axis=1)
+
     #### change it to be more modular when having multiple group of keywords 
     digital_columns = [k for k in keywords_dict['digital_money'] if k in keywords_df.columns]
+    gender_columns = [k for k in keywords_dict['gender'] if k in keywords_df.columns]
     merged_df['digital_money'] = keywords_df[digital_columns].sum(axis=1).clip(upper=1).astype(int)
-    ###
-    # missing a step to update revised topic_id with digital money updates 
-    ###
-    merged_df['final_topic_id'] = merged_df['revised_topic_id'] 
+    merged_df['gender'] = keywords_df[gender_columns].sum(axis=1).clip(upper=1).astype(int)
+    #%%
+    ### update and add new topic ids for gender and digital_money 
+    # digital_money= 434, gender = 435
+    merged_df['revised_topic_id_v2'] = merged_df['revised_topic_id'] 
+    merged_df.loc[merged_df['digital_money'] == 1, 'revised_topic_id_v2'] = 434
+    merged_df.loc[merged_df['gender'] == 1, 'revised_topic_id_v2'] = 435
+
+    ## merge metadata info 
+    merged_df['final_topic_id'] = merged_df['revised_topic_id_v2'] 
     #### merge topic information over 
-    merged_df = merged_df.merge(topic_map, left_on='revised_topic_id', right_on='Topic', how='left',indicator=False)
+    merged_df = merged_df.merge(topic_map, left_on='final_topic_id', right_on='Topic', how='left',indicator=False)
 
     #%%
     ## export to file 
     keep_columns = ['index','File_Name','Title', 'Country Code', 'Country_Name','Year','income','REO Region','par',
-            'org_topic_id', 'prob_topic_id', 'max_probability','non-program_topic_id', 'non-program_max_probability','digital_money','final_topic_id',
+            'org_topic_id', 'prob_topic_id', 'max_probability','non-program_topic_id', 'non-program_max_probability','revised_topic_id','final_topic_id',
             'CustomName', 'level_0', 'level_1', 'level_2']
     merged_df.to_csv(merged_out_path,index=False)
     simple_merged_df = merged_df[keep_columns]
