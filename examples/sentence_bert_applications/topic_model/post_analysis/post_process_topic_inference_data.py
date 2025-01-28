@@ -73,6 +73,8 @@ if __name__ =="__main__":
     data_folder = '/data/chuang/Language_Model_Training_Data/Models/Topic_Models/step_10000'
     input_folder = os.path.join(data_folder,'results_cache')
     topic_map_path = os.path.join(data_folder,'topic_v2_merged_info_customized.csv')
+    topic_map_path_v2 = os.path.join(data_folder,'topic_v2_merged_info_customized_clean.csv')
+
     country_meta_path = os.path.join(data_folder,'other_data','country_map.xlsx')
     document_meta_path = os.path.join(data_folder,'other_data','All_AIV_2008-2023_meta.xlsx')
     keywords_path = os.path.join(data_folder,'keywords','search_terms.xlsx')
@@ -97,7 +99,9 @@ if __name__ =="__main__":
     columns_to_transform = ['CustomName','level_0','level_1','level_2']
     for c in columns_to_transform:
         topic_map[c] = topic_map[c].apply(capitalize_special)
-    topic_map.head()
+    #topic_map.head()
+    topic_map.to_csv(topic_map_path_v2,index=False)
+
 
     ## get all program related topic ids
     program_topic_ids = topic_map[topic_map['level_0']=='Program']['Topic'].tolist()
